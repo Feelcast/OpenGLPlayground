@@ -30,7 +30,7 @@ vec forceApply(vec v1, vec v2, double m1, double m2, int fid){
     vec v = normalized((v2-v1));
     double d = distance(v2,v1);
     double f = 0;
-    double k = 500;
+    double k = 1000;
     switch(fid){
         case 1:
         f = forceInvSq(d,m1,m2,k);

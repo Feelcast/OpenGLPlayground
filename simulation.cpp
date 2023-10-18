@@ -1,21 +1,26 @@
 #include "dynamics.cpp"
 #include <GL/freeglut.h>
-
+// k= 500
 
 std::vector<Particle> particles;
 
-void equiSystem(double m1, double m2, double m3, double r){
+void equiSystem(double m1, double m2, double m3, double r,double k){
 double M = m1 + m2 + m3;
 double raux =  r*(1.5);
-double omega = 1;
+double L = sqrt(3.0)*r;
+double omega = sqrt(k*M/(L*L*L))/1.3;
 
 vec r1 = fromPolar(r,0);
 double r1cm = (m2+m3)*raux/M;
 vec v1 = normalized(rotationClockW(r1))*r1cm*omega;
+
 vec r2 = fromPolar(r,120);
-vec v2(0,0);
+double r2cm = (m1+m3)*raux/M;
+vec v2 = normalized(rotationClockW(r2))*r2cm*omega;
+
 vec r3 = fromPolar(r,240);
-vec v3(0,0);
+double r3cm = (m1+m2)*raux/M;
+vec v3 = normalized(rotationClockW(r3))*r3cm*omega;
 
 particles.push_back({r1,v1,m1});
 particles.push_back({r2,v2,m2});
@@ -112,11 +117,7 @@ int main(int argc, char** argv){
     // File containing the data
     std::string filename = "particle_data.txt";
     particles = readParticlesFromFile(filename);
-    //equiSystem(10,15,20,100);
-    Particle p1 = particles[0];
-    Particle p2 = particles[1];
-    double fx = forceApply(p1.pos,p2.pos,p1.mass, p2.mass,1)[0];
-    std::cout<<fx<<std::endl;
+    equiSystem(10,14,18,100,1000);
 
     //GL
     
