@@ -4,7 +4,35 @@
 
 std::vector<Particle> particles;
 
+void equiSystem(double m1, double m2, double m3, double r){
+double M = m1 + m2 + m3;
+double raux =  r*(1.5);
+double omega = 1;
+
+vec r1 = fromPolar(r,0);
+double r1cm = (m2+m3)*raux/M;
+vec v1 = normalized(rotationClockW(r1))*r1cm*omega;
+vec r2 = fromPolar(r,120);
+vec v2(0,0);
+vec r3 = fromPolar(r,240);
+vec v3(0,0);
+
+particles.push_back({r1,v1,m1});
+particles.push_back({r2,v2,m2});
+particles.push_back({r3,v3,m3});
+}
+
+
 void updateDynamics(){
+double h = 0.01;
+int s = particles.size();
+for (int i=0; i<s; i++){
+    for (int j=0; j<i; j++){
+        Particle &pi = particles[i];
+        Particle &pj = particles[j];
+        update(pi,pj,h);
+    }
+}
 
 }
 
@@ -35,15 +63,21 @@ double xsc = 1280;
 double ysc = 720;
 	for(int i=0;i<num;i++)
 {
-vec vi1(i*l,ysc);
-vec vf1(i*l,0);;
+vec vi1(i*l,ysc/2.0);
+vec vi1m(-i*l,ysc/2.0);
+vec vf1(i*l,- ysc/2.0);
+vec vf1m(-i*l,- ysc/2.0);
 line(vi1,vf1);
+line(vi1m,vf1m);
 }
 	for(int i=0;i<num;i++)
 {
-vec vi2(xsc,i*l);
-vec vf2(0,i*l);
+vec vi2(xsc/2.0,i*l);
+vec vf2(-xsc/2.0,i*l);
+vec vi2m(xsc/2.0,-i*l);
+vec vf2m(-xsc/2.0,-i*l);
 line(vi2,vf2);
+line(vi2m,vf2m);
 }
 
 }
@@ -53,10 +87,8 @@ void render(void)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-    glOrtho(0, 1280,0, 720, 1, -1);
+    glOrtho(-640, 640,-360, 360, 1, -1);
 	glTranslatef(0.0,0.0,0.0);
-
-    vec p(400,400);
     for (Particle p: particles){
         circle(p.pos, p.mass);
     }
@@ -72,13 +104,19 @@ if(t%25 == 0){
 render();
 t = 0;
 }
-
+glutPostRedisplay();
+glutTimerFunc(1,time,0);
 }
 
 int main(int argc, char** argv){
     // File containing the data
     std::string filename = "particle_data.txt";
     particles = readParticlesFromFile(filename);
+    //equiSystem(10,15,20,100);
+    Particle p1 = particles[0];
+    Particle p2 = particles[1];
+    double fx = forceApply(p1.pos,p2.pos,p1.mass, p2.mass,1)[0];
+    std::cout<<fx<<std::endl;
 
     //GL
     

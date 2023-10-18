@@ -112,4 +112,14 @@ double distance(vec v1, vec v2){
     return norm(v2-v1);
 }
 
+vec fromPolar(double r, double t){
+    const double PI = 3.141592654;
+    double angle = t*PI/180.0;
+    vec q(r*cos(angle),r*sin(angle));
+    return q;
+}
 
+vec rotationClockW(vec v){
+    vec vr(-v[1],v[0]);
+    return vr;
+}

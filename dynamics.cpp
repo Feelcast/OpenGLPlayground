@@ -8,16 +8,16 @@ double forceInvSq(double d, double m1, double m2, double k){
     }
 return f;
 }
-
+/*
 vec forceApply(Particle& p1, Particle& p2, int fid){
     vec v1 = p1.pos;
     vec v2 = p2.pos;
     double m1 = p1.mass;
     double m2 = p2.mass;
     vec v = normalized((v2-v1));
-    double d = distance(v1,v2);
+    double d = distance(v2,v1);
     double f = 0;
-    double k = 400;
+    double k = 100000;
     switch(fid){
         case 1:
         f = forceInvSq(d,m1,m2,k);
@@ -25,12 +25,12 @@ vec forceApply(Particle& p1, Particle& p2, int fid){
     }
     return v*f;
 }
-
+*/
 vec forceApply(vec v1, vec v2, double m1, double m2, int fid){
     vec v = normalized((v2-v1));
-    double d = distance(v1,v2);
+    double d = distance(v2,v1);
     double f = 0;
-    double k = 400;
+    double k = 500;
     switch(fid){
         case 1:
         f = forceInvSq(d,m1,m2,k);
@@ -46,33 +46,31 @@ vec forceGrav(vec v1, vec v2, double m1, double m2){
 vec vnext(Particle p2,Particle p1,vec f(vec x2,vec x1, double m2, double m1),double h){
   vec x2 = p2.pos;
   vec x1 = p1.pos;
+  vec v2 = p2.vel;
   double m2 = p2.mass;
   double m1 = p1.mass;
-    vec k1= f(x2,x1,m2,m1);
-    vec k2 = f(x2+ k1*h/2.,x1,m2,m1);
-    vec k3 = f(x2+ k2*h/2.,x1,m2,m1);
-    vec k4 = f(x2+ k2*h,x1,m2,m1);
-    return x2 + (k1+k2*2+k3*2+k4)*h/6.;
+    vec k1= f(x2,x1,m2,m1)/m2;
+    vec k2 = f(x2+ k1*h/2.,x1,m2,m1)/m2;
+    vec k3 = f(x2+ k2*h/2.,x1,m2,m1)/m2;
+    vec k4 = f(x2+ k2*h,x1,m2,m1)/m2;
+    return v2 + (k1+k2*2+k3*2+k4)*h/6.;
 }
 
 vec xnext(Particle p,double h){
   vec v = p.vel;
+  vec x = p.pos;
     vec k1 = v;
     vec k2 = v + k1*h/2.;
     vec k3 = v + k2*h/2.;
     vec k4 = v + k3*h;
-    return v + (k1+k2*2+k3*2+k4)*h/6.;
+    return x + (k1+k2*2+k3*2+k4)*h/6.;
 }
 
-vec nextPosGrav(Particle &p,Particle other,double h){
-  vec v = vnext(p,other,forceGrav,h);
-  p.vel=v;
-  return xnext(p,h);
-}
-
-void update(Particle &p2,Particle &p1,double h){
-p1.pos= nextPosGrav(p1,p2,h);
-p2.pos= nextPosGrav(p2,p1,h);
+void update(Particle &p1,Particle &p2,double h){
+    p1.pos = xnext(p1,h);
+    p2.pos = xnext(p2,h);
+    p1.vel = vnext(p1,p2,forceGrav,h);
+    p2.vel = vnext(p2,p1,forceGrav,h);
 }
 
 // Read data from a file and return a vector of Particle objects
