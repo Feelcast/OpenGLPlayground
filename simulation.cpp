@@ -5,10 +5,11 @@
 std::vector<Particle> particles;
 
 void equiSystem(double m1, double m2, double m3, double r,double k){
+vec zero(0,0);
 double M = m1 + m2 + m3;
 double raux =  r*(1.5);
 double L = sqrt(3.0)*r;
-double omega = sqrt(k*M/(L*L*L))/1.3;
+double omega = sqrt(k*M/(L*L*L));
 
 vec r1 = fromPolar(r,0);
 double r1cm = (m2+m3)*raux/M;
@@ -22,23 +23,13 @@ vec r3 = fromPolar(r,240);
 double r3cm = (m1+m2)*raux/M;
 vec v3 = normalized(rotationClockW(r3))*r3cm*omega;
 
-particles.push_back({r1,v1,m1});
-particles.push_back({r2,v2,m2});
-particles.push_back({r3,v3,m3});
+particles.push_back({r1,v1,zero,m1});
+particles.push_back({r2,v2,zero,m2});
+particles.push_back({r3,v3,zero,m3});
 }
-
 
 void updateDynamics(){
-double h = 0.01;
-int s = particles.size();
-for (int i=0; i<s; i++){
-    for (int j=0; j<i; j++){
-        Particle &pi = particles[i];
-        Particle &pj = particles[j];
-        update(pi,pj,h);
-    }
-}
-
+    particleForceInteractions(particles);
 }
 
 void circle (vec pos, double cr){
@@ -56,11 +47,41 @@ void circle (vec pos, double cr){
 
 void line(vec v1,vec v2)
 {
-
 	glBegin(GL_LINES);
 	glVertex2f(v1[0],v1[1]);
 	glVertex2f(v2[0],v2[1]);
 	glEnd();
+}
+
+void colourLine(vec v1,vec v2)
+{
+	glBegin(GL_LINES);
+    glColor3f(0.8,0,0);
+	glVertex2f(v1[0],v1[1]);
+	glVertex2f(v2[0],v2[1]);
+    glColor3f(1,1,1);
+	glEnd();
+}
+
+void renderTrace(std::vector<vec> points){
+    glBegin(GL_LINES);
+
+    for (vec v: points){
+        glVertex2f(v[0],v[1]);
+    }
+	glEnd();
+}
+
+void drawPartVec(Particle p){
+    vec x1 = p.pos;
+    if(p.ac[0] != 0 && p.ac[1] != 0){
+        vec xa = p.pos + normalized(p.ac)*5;
+        colourLine(x1,xa);
+    }
+    if(p.vel[0] != 0 && p.vel[1] != 0){
+        vec xv = p.pos + normalized(p.vel)*20;
+        colourLine(x1,xv);
+    }
 }
 
 void grid (float l,int num){
@@ -96,28 +117,34 @@ void render(void)
 	glTranslatef(0.0,0.0,0.0);
     for (Particle p: particles){
         circle(p.pos, p.mass);
+        drawPartVec(p);
+        renderTrace(p.trace);
     }
     grid(50,40);
     glutSwapBuffers();
 }
 
-void time(int v){
-long unsigned int t = 0;
-updateDynamics();
-t++;
-if(t%25 == 0){
-render();
-t = 0;
-}
-glutPostRedisplay();
-glutTimerFunc(1,time,0);
+void time(int t){
+    updateDynamics();
+    t++;
+    if(t%15 == 0){
+        //updateTraces(particles);
+        render();
+        glutPostRedisplay();
+    }
+
+    if(t%90 == 0){
+        updateTraces(particles);
+        t = 0;
+    }
+    glutTimerFunc(1,time,t);
 }
 
 int main(int argc, char** argv){
     // File containing the data
     std::string filename = "particle_data.txt";
     particles = readParticlesFromFile(filename);
-    equiSystem(10,14,18,100,1000);
+    //equiSystem(10,10,10,40,1000);
 
     //GL
     

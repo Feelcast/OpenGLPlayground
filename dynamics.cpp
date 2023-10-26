@@ -30,7 +30,7 @@ vec forceApply(vec v1, vec v2, double m1, double m2, int fid){
     vec v = normalized((v2-v1));
     double d = distance(v2,v1);
     double f = 0;
-    double k = 1000;
+    double k = 4000;
     switch(fid){
         case 1:
         f = forceInvSq(d,m1,m2,k);
@@ -43,34 +43,59 @@ vec forceGrav(vec v1, vec v2, double m1, double m2){
     return forceApply(v1,v2,m1,m2,1);
 }
 
-vec vnext(Particle p2,Particle p1,vec f(vec x2,vec x1, double m2, double m1),double h){
-  vec x2 = p2.pos;
-  vec x1 = p1.pos;
-  vec v2 = p2.vel;
-  double m2 = p2.mass;
-  double m1 = p1.mass;
-    vec k1= f(x2,x1,m2,m1)/m2;
-    vec k2 = f(x2+ k1*h/2.,x1,m2,m1)/m2;
-    vec k3 = f(x2+ k2*h/2.,x1,m2,m1)/m2;
-    vec k4 = f(x2+ k2*h,x1,m2,m1)/m2;
-    return v2 + (k1+k2*2+k3*2+k4)*h/6.;
+vec acSum(std::vector<Particle> &particles, int n, vec posDelta){
+    int s = particles.size();
+    vec ac(0,0);
+    Particle &pn = particles[n]; 
+    for (int i=0; i<s; i++){
+        Particle pi = particles[i];
+        if (i!=n){
+            ac = ac + forceGrav(pn.pos + posDelta, pi.pos, pn.mass, pi.mass)/pn.mass;
+        }           
+    }  
+    if (pn.mechanic){
+        pn.ac = ac;
+    }
+    return ac;
 }
 
-vec xnext(Particle p,double h){
-  vec v = p.vel;
-  vec x = p.pos;
-    vec k1 = v;
-    vec k2 = v + k1*h/2.;
-    vec k3 = v + k2*h/2.;
-    vec k4 = v + k3*h;
-    return x + (k1+k2*2+k3*2+k4)*h/6.;
+void RK4inter(std::vector<Particle> &particles, int n, double h){
+    Particle &p1 = particles[n];
+    vec zero(0,0);
+    vec r1 = p1.pos;
+    vec v1 = p1.vel;
+    vec kr1 = v1;
+    vec kv1 = acSum(particles,n,zero);
+    vec kr2 = v1 + kv1*h/2.0;
+    vec kv2 = acSum(particles,n,kr1*h/2.0);
+    vec kr3 = v1 + kv2*h/2.0;
+    vec kv3 = acSum(particles,n,kr2*h/2.0);
+    vec kr4 = v1 + kv3*h;
+    vec kv4 = acSum(particles,n,kr3*h);
+    if (p1.mechanic){
+    p1.vel = p1.vel + (kv1+kv2*2+kv3*2+kv4)*h/6.0;
+    }
+    p1.pos = p1.pos + (kr1+kr2*2+kr3*2+kr4)*h/6.0;
 }
 
-void update(Particle &p1,Particle &p2,double h){
-    p1.pos = xnext(p1,h);
-    p2.pos = xnext(p2,h);
-    p1.vel = vnext(p1,p2,forceGrav,h);
-    p2.vel = vnext(p2,p1,forceGrav,h);
+void particleForceInteractions(std::vector<Particle> &particles){
+    double h = 0.001;
+    int s = particles.size();
+    for (int i=0; i<s; i++){
+        RK4inter(particles, i, h);           
+    }   
+}
+
+void updateTraces(std::vector<Particle> &particles){
+    for(Particle &p : particles){
+        if(p.trace.size()<1000){
+            p.trace.push_back(p.pos);
+        }
+        else{
+            p.trace.erase(p.trace.begin());
+            p.trace.push_back(p.pos);
+        }
+    }
 }
 
 // Read data from a file and return a vector of Particle objects
@@ -97,14 +122,17 @@ std::vector<Particle> readParticlesFromFile(const std::string& filename) {
                 return particles; // Return an empty vector in case of an error
             }
         }
-        if (values.size() != 5) {
-            std::cerr << "Error: Each row should contain 5 values." << std::endl;
+        if (values.size() != 6) {
+            std::cerr << "Error: Each row should contain 6 values." << std::endl;
             return particles; // Return an empty vector in case of an error
         }
         Particle particle;
         particle.pos = vec(values[0], values[1]);
         particle.vel = vec(values[2], values[3]);
         particle.mass = values[4];
+        if (values[5]!=0){
+            particle.mechanic = false;
+        }
         particles.push_back(particle);
     }
 

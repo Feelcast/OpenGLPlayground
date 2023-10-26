@@ -78,7 +78,10 @@ private:
 struct Particle {
     vec pos;  // Position vector
     vec vel;  // Velocity vector
+    vec ac;
     double mass;       // Mass of the particle
+    bool mechanic = true;
+    std::vector<vec> trace;
 };
 
 // Dot product as a standalone function
