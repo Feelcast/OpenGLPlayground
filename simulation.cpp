@@ -2,7 +2,10 @@
 #include <GL/freeglut.h>
 // k= 500
 
+// global
 std::vector<Particle> particles;
+bool traceFlag = false;
+bool forceSim = false;
 
 void equiSystem(double m1, double m2, double m3, double r,double k){
 vec zero(0,0);
@@ -29,7 +32,7 @@ particles.push_back({r3,v3,zero,m3});
 }
 
 void updateDynamics(){
-    particleForceInteractions(particles);
+    particleDynamics(particles, forceSim);
 }
 
 void circle (vec pos, double cr){
@@ -116,11 +119,11 @@ void render(void)
     glOrtho(-640, 640,-360, 360, 1, -1);
 	glTranslatef(0.0,0.0,0.0);
     for (Particle p: particles){
-        circle(p.pos, p.mass);
-        drawPartVec(p);
+        circle(p.pos, p.r);
+        //drawPartVec(p);
         renderTrace(p.trace);
     }
-    grid(50,40);
+    grid(200,10);
     glutSwapBuffers();
 }
 
@@ -128,12 +131,11 @@ void time(int t){
     updateDynamics();
     t++;
     if(t%15 == 0){
-        //updateTraces(particles);
         render();
         glutPostRedisplay();
     }
 
-    if(t%90 == 0){
+    if(t%90 == 0 && traceFlag){
         updateTraces(particles);
         t = 0;
     }
@@ -144,10 +146,11 @@ int main(int argc, char** argv){
     // File containing the data
     std::string filename = "particle_data.txt";
     particles = readParticlesFromFile(filename);
+    traceFlag = true;
+    forceSim = true;
     //equiSystem(10,10,10,40,1000);
 
     //GL
-    
     glutInit(&argc, argv);
 
     glutSetOption(GLUT_MULTISAMPLE, 8);

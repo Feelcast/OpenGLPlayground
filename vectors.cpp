@@ -80,6 +80,7 @@ struct Particle {
     vec vel;  // Velocity vector
     vec ac;
     double mass;       // Mass of the particle
+    double r;
     bool mechanic = true;
     std::vector<vec> trace;
 };
