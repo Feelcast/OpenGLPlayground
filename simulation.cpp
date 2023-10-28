@@ -147,7 +147,7 @@ int main(int argc, char** argv){
     std::string filename = "particle_data.txt";
     particles = readParticlesFromFile(filename);
     traceFlag = true;
-    forceSim = true;
+    //forceSim = true;
     //equiSystem(10,10,10,40,1000);
 
     //GL

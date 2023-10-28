@@ -100,6 +100,9 @@ double norm(const vec& v) {
     return sqrt(v.getX() * v.getX() + v.getY() * v.getY());
 }
 
+double sqNorm(const vec& v) {
+    return v.getX() * v.getX() + v.getY() * v.getY();
+}
 // Normalized vector as a standalone function
 vec normalized(const vec& v) {
     double nor = norm(v);

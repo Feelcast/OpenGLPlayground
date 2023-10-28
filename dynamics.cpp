@@ -1,22 +1,54 @@
 
 #include "vectors.cpp"
 
-double forceInvSq(double d, double m1, double m2, double k){
+bool areColliding(Particle p1, Particle p2){
+    vec dif = p2.pos - p1.pos;
+    double distsq = sqNorm(dif);
+    double colRad = (p1.r + p2.r)*(p1.r + p2.r);
+    bool result = distsq < 1.05*colRad && distsq > 0.95*colRad;
+    return result;
+}
+
+void calculateCol(Particle &p1, Particle &p2){
+    //I did the momentum and energy equations on the frame where particle 2 is static, momentum transfer to the second particle is on the normal
+    vec normal = normalized(p2.pos - p1.pos);
+    vec relv = p1.vel - p2.vel;
+    double tMass = p1.mass + p2.mass;
+    vec v2f = normal*(2*p1.mass/tMass)*dot(relv, normal);
+    vec v1f = v2f*(-p2.mass/p1.mass);
+    p1.vel = p1.vel + v1f;
+    p2.vel = p2.vel + v2f;
+}
+
+void particleCols(std::vector<Particle> &particles){
+    int s = particles.size();
+    for (int i = 0; i<s; i++){
+        Particle &pi = particles[i];
+        for (int j = 0; j<i; j++){
+            Particle &pj = particles[j];
+            if(areColliding(pi,pj)){
+                calculateCol(pi,pj);
+            }
+        }
+    }
+}
+
+double forceInvSq(double dsq, double m1, double m2, double k){
     double f = 0;
-    if (d!=0){
-        f = (k*m1*m2)/(d*d);
+    if (dsq!=0){
+        f = (k*m1*m2)/(dsq);
     }
 return f;
 }
 
 vec forceApply(vec v1, vec v2, double m1, double m2, int fid){
     vec v = normalized((v2-v1));
-    double d = distance(v2,v1);
+    double dsq = sqNorm(v2-v1);
     double f = 0;
     double k = 4000;
     switch(fid){
         case 1:
-        f = forceInvSq(d,m1,m2,k);
+        f = forceInvSq(dsq,m1,m2,k);
         break;
     }
     return v*f;
@@ -66,7 +98,8 @@ void particleDynamics(std::vector<Particle> &particles, bool forceSim){
     int s = particles.size();
     for (int i=0; i<s; i++){
         RK4inter(particles, i, h, forceSim, forceGrav);           
-    }   
+    }
+    particleCols(particles);
 }
 
 void updateTraces(std::vector<Particle> &particles){
