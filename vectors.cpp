@@ -91,6 +91,7 @@ struct Particle {
 
 class Box {
     public:
+    Box(): pos(0,0), vel(0,0) , mass(1), height(1),lenght(1),rotation(0) {}
     Box(vec p, vec v, double m, double h, double l, double rot, bool mec){
         const double PI = 3.141592654;
         pos = p;
@@ -122,6 +123,33 @@ class Box {
     } 
     private:
     
+};
+
+class Container{
+
+    public:
+    vec pos;
+    double height;
+    double lenght;
+    //wall thickness = 4
+    Box leftSide;
+    Box rightSide;
+    Box upSide;
+    Box downSide;
+
+    Container(vec p, double h, double l){
+        pos = p;
+        height = h;
+        lenght = l;
+        vec x(1,0);
+        vec y(0,1);
+        upSide = Box(pos + y*(h/2.0+2),vec(0,0),1000,4,l+8,0,false);
+        downSide = Box(pos - y*(h/2.0+2),vec(0,0),1000,4,l+8,0,false);
+        rightSide = Box(pos + x*(l/2.0+2),vec(0,0),1000,h,4,0,false);
+        leftSide = Box(pos - x*(l/2.0+2),vec(0,0),1000,h,4,0,false);
+    }
+    private:
+
 };
 
 // Dot product as a standalone function

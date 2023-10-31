@@ -126,6 +126,11 @@ line(vi2m,vf2m);
 
 }
 
+//TO DO
+void killFarObjects(){
+
+}
+
 void render(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -165,7 +170,8 @@ int main(int argc, char** argv){
     std::string filename = "particle_data.txt";
     particles = readParticlesFromFile(filename);
     traceFlag = true;
-    boxes.push_back(Box(vec(-400,0), vec(10,0),100,160,160,0,true));
+    //box creation
+    boxes.push_back(Box(vec(0,0), vec(0,0),100,160,160,0,true));
     //forceSim = true;
     //equiSystem(10,10,10,40,1000);
 

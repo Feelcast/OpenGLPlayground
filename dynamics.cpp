@@ -211,6 +211,17 @@ void updateTraces(std::vector<Particle> &particles){
     }
 }
 
+void createContainer(double h, double l){
+
+}
+
+void createGas(Container c){
+
+}
+
+void createFluid(double speed, double density){
+
+}
 // Read data from a file and return a vector of Particle objects
 std::vector<Particle> readParticlesFromFile(const std::string& filename) {
     std::vector<Particle> particles; // Vector to store Particle objects
