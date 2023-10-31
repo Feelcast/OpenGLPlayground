@@ -75,6 +75,10 @@ private:
     double x, y;
 };
 
+struct BoxVertex{
+    vec vertex[4];
+};
+
 struct Particle {
     vec pos;  // Position vector
     vec vel;  // Velocity vector
@@ -83,6 +87,41 @@ struct Particle {
     double r;
     bool mechanic = true;
     std::vector<vec> trace;
+};
+
+class Box {
+    public:
+    Box(vec p, vec v, double m, double h, double l, double rot, bool mec){
+        const double PI = 3.141592654;
+        pos = p;
+        vel = v;
+        mass = m;
+        height = h;
+        lenght = l;
+        rotation = rot*PI/180.0;
+        mechanic = mec;
+    }
+    vec pos;  // Position vector
+    vec vel;  // Velocity vector
+    vec ac;
+    double mass;       // Mass of the particle
+    double height;
+    double lenght;
+    double rotation;
+    bool mechanic = true;
+
+    BoxVertex getVertex(){
+        vec xp(cos(rotation), sin(rotation));
+        vec yp(-sin(rotation), cos(rotation));
+        BoxVertex result;
+        result.vertex[0] = pos - xp*lenght/2.0 + yp*height/2.0;
+        result.vertex[1] = pos + xp*lenght/2.0 + yp*height/2.0;
+        result.vertex[2] = pos + xp*lenght/2.0 - yp*height/2.0;
+        result.vertex[3] = pos - xp*lenght/2.0 - yp*height/2.0;
+        return result;
+    } 
+    private:
+    
 };
 
 // Dot product as a standalone function
@@ -129,4 +168,9 @@ vec fromPolar(double r, double t){
 vec rotationClockW(vec v){
     vec vr(-v[1],v[0]);
     return vr;
+}
+
+vec orthoNormal(vec v1, vec v2){
+    vec dif = v2-v1;
+    return normalized(rotationClockW(dif));
 }

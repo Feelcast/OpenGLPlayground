@@ -4,6 +4,7 @@
 
 // global
 std::vector<Particle> particles;
+std::vector<Box> boxes;
 bool traceFlag = false;
 bool forceSim = false;
 
@@ -33,6 +34,8 @@ particles.push_back({r3,v3,zero,m3});
 
 void updateDynamics(){
     particleDynamics(particles, forceSim);
+    particleBoxCols(particles, boxes);
+    boxDynamics(boxes);
 }
 
 void circle (vec pos, double cr){
@@ -54,6 +57,18 @@ void line(vec v1,vec v2)
 	glVertex2f(v1[0],v1[1]);
 	glVertex2f(v2[0],v2[1]);
 	glEnd();
+}
+
+void renderBox(Box b){
+    BoxVertex bVertex = b.getVertex();
+    glBegin(GL_QUADS);
+    glColor3f(0.75,0.75,0);
+    glVertex2f(bVertex.vertex[0][0],bVertex.vertex[0][1]);
+    glVertex2f(bVertex.vertex[1][0],bVertex.vertex[1][1]);
+    glVertex2f(bVertex.vertex[2][0],bVertex.vertex[2][1]);
+    glVertex2f(bVertex.vertex[3][0],bVertex.vertex[3][1]);
+    glColor3f(1,1,1);
+    glEnd();
 }
 
 void colourLine(vec v1,vec v2)
@@ -118,12 +133,15 @@ void render(void)
 	glLoadIdentity();
     glOrtho(-640, 640,-360, 360, 1, -1);
 	glTranslatef(0.0,0.0,0.0);
+    grid(200,10);
     for (Particle p: particles){
         circle(p.pos, p.r);
         //drawPartVec(p);
-        renderTrace(p.trace);
+        //renderTrace(p.trace);
     }
-    grid(200,10);
+    for (Box b: boxes){
+        renderBox(b);
+    }
     glutSwapBuffers();
 }
 
@@ -147,6 +165,7 @@ int main(int argc, char** argv){
     std::string filename = "particle_data.txt";
     particles = readParticlesFromFile(filename);
     traceFlag = true;
+    boxes.push_back(Box(vec(-400,0), vec(10,0),100,160,160,0,true));
     //forceSim = true;
     //equiSystem(10,10,10,40,1000);
 

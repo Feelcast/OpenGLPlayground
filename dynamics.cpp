@@ -5,7 +5,29 @@ bool areColliding(Particle p1, Particle p2){
     vec dif = p2.pos - p1.pos;
     double distsq = sqNorm(dif);
     double colRad = (p1.r + p2.r)*(p1.r + p2.r);
-    bool result = distsq < 1.05*colRad && distsq > 0.95*colRad;
+    bool result = distsq < 1.05*colRad;
+    return result;
+}
+
+bool areColliding(vec v1, vec v2, Particle p){
+    vec on = orthoNormal(v1,v2);
+    vec unitary = normalized(v2-v1);
+    vec middle = (v2+v1)/2.0;
+    vec dvec = p.pos-middle;
+    double normalProy = dot(dvec, on);
+    double tProy = dot(dvec, unitary);
+    double lenghtSq = sqNorm(v2-v1);
+    bool result = normalProy*normalProy < (p.r*1.01)*(p.r*1.01) && tProy*tProy < 1.01*lenghtSq/4.0;
+    return result;
+}
+
+bool areColliding(Box b, Particle p){
+    //bVertex index from 0 to 3
+    BoxVertex bVertex = b.getVertex();
+    bool result = areColliding(bVertex.vertex[0],bVertex.vertex[1],p) || 
+                    areColliding(bVertex.vertex[1],bVertex.vertex[2],p) ||
+                    areColliding(bVertex.vertex[2],bVertex.vertex[3],p) ||
+                    areColliding(bVertex.vertex[3],bVertex.vertex[0],p);
     return result;
 }
 
@@ -20,6 +42,45 @@ void calculateCol(Particle &p1, Particle &p2){
     p2.vel = p2.vel + v2f;
 }
 
+void calculateCol(Box &b, Particle &p){
+    vec normal(0,0);
+    BoxVertex bVertex = b.getVertex();
+    int numCase = 1*areColliding(bVertex.vertex[0],bVertex.vertex[1],p) +
+                    2*areColliding(bVertex.vertex[1],bVertex.vertex[2],p) +
+                    3*areColliding(bVertex.vertex[2],bVertex.vertex[3],p) +
+                    4*areColliding(bVertex.vertex[3],bVertex.vertex[0],p);
+    switch (numCase) {
+    case 1:
+        normal = orthoNormal(bVertex.vertex[0],bVertex.vertex[1]);
+        break;
+    case 2:
+        normal = orthoNormal(bVertex.vertex[1],bVertex.vertex[2]);
+        break;
+    case 3:
+        normal = orthoNormal(bVertex.vertex[2],bVertex.vertex[3]);
+        break;
+    case 4:
+        normal = orthoNormal(bVertex.vertex[3],bVertex.vertex[0]);
+        break;
+    default:
+        break;
+    }
+
+    vec relv = b.vel - p.vel;
+    double tMass = b.mass + p.mass;
+
+    vec v2f = normal*(2*b.mass/tMass)*dot(relv, normal);
+    vec v1f = v2f*(-p.mass/b.mass);
+
+    if(b.mechanic){
+        b.vel = b.vel + v1f;
+    }
+    if (p.mechanic){
+        p.vel = p.vel + v2f;
+    }
+    
+}
+
 void particleCols(std::vector<Particle> &particles){
     int s = particles.size();
     for (int i = 0; i<s; i++){
@@ -28,6 +89,20 @@ void particleCols(std::vector<Particle> &particles){
             Particle &pj = particles[j];
             if(areColliding(pi,pj)){
                 calculateCol(pi,pj);
+            }
+        }
+    }
+}
+
+void particleBoxCols(std::vector<Particle> &particles, std::vector<Box> &boxes){
+    int sp = particles.size();
+    int sb = boxes.size();
+    for (int i = 0; i<sp; i++){
+        Particle &p = particles[i];
+        for (int j = 0; j<sb; j++){
+            Box &b = boxes[j];
+            if(areColliding(b,p)){
+                calculateCol(b,p);
             }
         }
     }
@@ -93,6 +168,20 @@ void RK4inter(std::vector<Particle> &particles, int n, double h, bool forceSim, 
     p1.pos = p1.pos + (kr1+kr2*2+kr3*2+kr4)*h/6.0;
 }
 
+void boxRK4(std::vector<Box> &boxes, int n, double h){
+    Box &b = boxes[n];
+    vec u(1,1);
+    vec r = b.pos;
+    vec v = b.vel;
+
+    vec kr1 = v;
+    vec kr2 = v + u*h/2.0;
+    vec kr3 = v + u*h/2.0;
+    vec kr4 = v + u*h;
+
+    b.pos = b.pos + (kr1+kr2*2+kr3*2+kr4)*h/6.0;
+}
+
 void particleDynamics(std::vector<Particle> &particles, bool forceSim){
     double h = 0.001;
     int s = particles.size();
@@ -100,6 +189,14 @@ void particleDynamics(std::vector<Particle> &particles, bool forceSim){
         RK4inter(particles, i, h, forceSim, forceGrav);           
     }
     particleCols(particles);
+}
+
+void boxDynamics(std::vector<Box> &boxes){
+    double h = 0.001;
+    int s = boxes.size();
+    for (int i=0; i<s; i++){
+        boxRK4(boxes,i,h);         
+    }
 }
 
 void updateTraces(std::vector<Particle> &particles){
