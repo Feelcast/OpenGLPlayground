@@ -7,6 +7,9 @@ std::vector<Particle> particles;
 std::vector<Box> boxes;
 bool traceFlag = false;
 bool forceSim = false;
+long unsigned int time_int = 0;
+// button
+bool play = false;
 
 void equiSystem(double m1, double m2, double m3, double r,double k){
 vec zero(0,0);
@@ -131,6 +134,31 @@ void killFarObjects(){
 
 }
 
+void displayText(vec pos, char *text){
+    char *p;
+    glPushMatrix();
+    glTranslatef(pos[0], pos[1], 0);
+    glScalef(1.0/10.0,1.0/10.0,1);
+    for (p = text; *p; p++)
+      glutStrokeCharacter(GLUT_STROKE_ROMAN, *p);
+    glPopMatrix();
+}
+
+void drawButton(){
+    if (play) {
+        glColor3f(0.0, 1.0, 0.0); // Set the color to green when the button is pressed
+    } else {
+        glColor3f(1.0, 0.0, 0.0); // Set the color to red when the button is not pressed
+    }
+    glBegin(GL_QUADS);
+    glVertex2f(500, 320); // Define the four corners of the button
+    glVertex2f(520, 320);
+    glVertex2f(520, 340);
+    glVertex2f(500, 340);
+    glEnd();
+    glColor3f(1.0, 1.0, 1.0);
+}
+
 void render(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -138,21 +166,35 @@ void render(void)
 	glLoadIdentity();
     glOrtho(-640, 640,-360, 360, 1, -1);
 	glTranslatef(0.0,0.0,0.0);
+
+    //object rendering
     grid(200,10);
     for (Particle p: particles){
         circle(p.pos, p.r);
         //drawPartVec(p);
-        //renderTrace(p.trace);
+        if(traceFlag){
+        renderTrace(p.trace);
+        }
     }
     for (Box b: boxes){
         renderBox(b);
     }
+    //time text
+    double time_seg = time_int/1000.0;
+    char* char_time = new char[10];
+    std::sprintf(char_time,"%04.3f",time_seg);
+    displayText(vec(500,-320),char_time);
+    //time button
+    drawButton();
+    // buffer swapping
     glutSwapBuffers();
 }
 
 void time(int t){
+    if (play){
     updateDynamics();
     t++;
+    time_int++;
     if(t%15 == 0){
         render();
         glutPostRedisplay();
@@ -162,7 +204,17 @@ void time(int t){
         updateTraces(particles);
         t = 0;
     }
+    }
     glutTimerFunc(1,time,t);
+}
+
+void onMouseClick(int button, int state, int x, int y) {
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        // Check if the mouse click coordinates are within the button's area
+        if (x >= 1140 && x <= 1160 && y >= 20 && y <= 40) {
+            play = !play; // Toggle the boolean variable
+        }
+    }
 }
 
 int main(int argc, char** argv){
@@ -171,7 +223,7 @@ int main(int argc, char** argv){
     particles = readParticlesFromFile(filename);
     traceFlag = true;
     //box creation
-    boxes.push_back(Box(vec(0,0), vec(0,0),100,160,160,0,true));
+    boxes.push_back(Box(vec(0,0), vec(0,0),50,160,160,30,true));
     //forceSim = true;
     //equiSystem(10,10,10,40,1000);
 
@@ -191,7 +243,9 @@ int main(int argc, char** argv){
     glutInitWindowPosition(100, 100);
     glutCreateWindow("Simulation");
     glutDisplayFunc(render);
+    glutMouseFunc(onMouseClick);
     glutTimerFunc(1,time,0);
     glutMainLoop();
+    
     return 0;
 }
