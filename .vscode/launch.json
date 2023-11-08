@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/Rodrigo Pacheco/Documents/Code/OpenGL/OpenGLPlayground",
-      "program": "c:/Users/Rodrigo Pacheco/Documents/Code/OpenGL/OpenGLPlayground/build/Debug/outDebug",
+      "cwd": "c:/Users/Rodrigo Pacheco/Documents/VSCODE/Code/OpenGLPlayground",
+      "program": "c:/Users/Rodrigo Pacheco/Documents/VSCODE/Code/OpenGLPlayground/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

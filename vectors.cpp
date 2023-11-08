@@ -143,15 +143,29 @@ class Container{
         lenght = l;
         vec x(1,0);
         vec y(0,1);
-        upSide = Box(pos + y*(h/2.0+2),vec(0,0),1000,4,l+8,0,false);
-        downSide = Box(pos - y*(h/2.0+2),vec(0,0),1000,4,l+8,0,false);
-        rightSide = Box(pos + x*(l/2.0+2),vec(0,0),1000,h,4,0,false);
-        leftSide = Box(pos - x*(l/2.0+2),vec(0,0),1000,h,4,0,false);
+        upSide = Box(pos + y*(h/2.0+2),vec(0,0),10000,4,l+8,0,false);
+        downSide = Box(pos - y*(h/2.0+2),vec(0,0),10000,4,l+8,0,false);
+        rightSide = Box(pos + x*(l/2.0+2),vec(0,0),10000,h,4,0,false);
+        leftSide = Box(pos - x*(l/2.0+2),vec(0,0),10000,h,4,0,false);
     }
     private:
 
 };
 
+struct ParticlesList{
+    Particle particlesArr[2000];
+};
+
+struct BoxesList{
+    Box boxesArr[100];
+};
+
+void registerContainer(Container c, std::vector<Box> &boxes){
+    boxes.push_back(c.leftSide);
+    boxes.push_back(c.rightSide);
+    boxes.push_back(c.upSide);
+    boxes.push_back(c.downSide);
+}
 // Dot product as a standalone function
 double dot(const vec& v1, const vec& v2) {
     return v1.getX() * v2.getX() + v1.getY() * v2.getY();

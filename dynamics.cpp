@@ -21,13 +21,13 @@ bool areColliding(vec v1, vec v2, Particle p){
     return result;
 }
 
-bool areColliding(Box b, Particle p){
+int areColliding(Box b, Particle p){
     //bVertex index from 0 to 3
     BoxVertex bVertex = b.getVertex();
-    bool result = areColliding(bVertex.vertex[0],bVertex.vertex[1],p) || 
-                    areColliding(bVertex.vertex[1],bVertex.vertex[2],p) ||
-                    areColliding(bVertex.vertex[2],bVertex.vertex[3],p) ||
-                    areColliding(bVertex.vertex[3],bVertex.vertex[0],p);
+    int result = 1*areColliding(bVertex.vertex[0],bVertex.vertex[1],p) +
+                    2*areColliding(bVertex.vertex[1],bVertex.vertex[2],p) +
+                    3*areColliding(bVertex.vertex[2],bVertex.vertex[3],p) +
+                    4*areColliding(bVertex.vertex[3],bVertex.vertex[0],p);
     return result;
 }
 
@@ -42,14 +42,10 @@ void calculateCol(Particle &p1, Particle &p2){
     p2.vel = p2.vel + v2f;
 }
 
-void calculateCol(Box &b, Particle &p){
+void calculateCol(Box &b, Particle &p, int numcase){
     vec normal(0,0);
     BoxVertex bVertex = b.getVertex();
-    int numCase = 1*areColliding(bVertex.vertex[0],bVertex.vertex[1],p) +
-                    2*areColliding(bVertex.vertex[1],bVertex.vertex[2],p) +
-                    3*areColliding(bVertex.vertex[2],bVertex.vertex[3],p) +
-                    4*areColliding(bVertex.vertex[3],bVertex.vertex[0],p);
-    switch (numCase) {
+    switch (numcase) {
     case 1:
         normal = orthoNormal(bVertex.vertex[0],bVertex.vertex[1]);
         break;
@@ -94,15 +90,26 @@ void particleCols(std::vector<Particle> &particles){
     }
 }
 
+void particleCols2(std::vector<Particle> &particles){
+    //implementar quadtrees
+    // dividir el espacio en celdas de 20x20
+    int s = particles.size();
+    for (int i = 0; i<s; i++){
+        Particle &pi = particles[i];
+    }
+}
+
 void particleBoxCols(std::vector<Particle> &particles, std::vector<Box> &boxes){
+    //implementar quadtrees
     int sp = particles.size();
     int sb = boxes.size();
     for (int i = 0; i<sp; i++){
         Particle &p = particles[i];
         for (int j = 0; j<sb; j++){
             Box &b = boxes[j];
-            if(areColliding(b,p)){
-                calculateCol(b,p);
+            int numcase = areColliding(b,p);
+            if(numcase!=0){
+                calculateCol(b,p,numcase);
             }
         }
     }
@@ -162,31 +169,37 @@ void RK4inter(std::vector<Particle> &particles, int n, double h, bool forceSim, 
     vec kv3 = acSum(particles,n,kr2*h/2.0, force);
     vec kr4 = v1 + kv3*h;
     vec kv4 = acSum(particles,n,kr3*h, force);
-    if (p1.mechanic && forceSim){
+    if (p1.mechanic){
     p1.vel = p1.vel + (kv1+kv2*2+kv3*2+kv4)*h/6.0;
     }
     p1.pos = p1.pos + (kr1+kr2*2+kr3*2+kr4)*h/6.0;
 }
 
+void constantVelSim(std::vector<Particle> &particles, int n, double h){
+    Particle &p1 = particles[n];
+    if(p1.vel[0]!=0 && p1.vel[1]!=0){
+    p1.pos = p1.pos + p1.vel*h;
+    }
+}
+
 void boxRK4(std::vector<Box> &boxes, int n, double h){
     Box &b = boxes[n];
-    vec u(1,1);
-    vec r = b.pos;
-    vec v = b.vel;
-
-    vec kr1 = v;
-    vec kr2 = v + u*h/2.0;
-    vec kr3 = v + u*h/2.0;
-    vec kr4 = v + u*h;
-
-    b.pos = b.pos + (kr1+kr2*2+kr3*2+kr4)*h/6.0;
+    if(b.vel[0]!=0 && b.vel[1]!=0){
+        b.pos = b.pos + b.vel*h;
+    }
+    
 }
 
 void particleDynamics(std::vector<Particle> &particles, bool forceSim){
     double h = 0.001;
     int s = particles.size();
     for (int i=0; i<s; i++){
-        RK4inter(particles, i, h, forceSim, forceGrav);           
+        if (forceSim){
+            RK4inter(particles, i, h, forceSim, forceGrav);    
+        }
+        else{
+            constantVelSim(particles, i, h);
+        }
     }
     particleCols(particles);
 }
@@ -211,12 +224,30 @@ void updateTraces(std::vector<Particle> &particles){
     }
 }
 
-void createContainer(double h, double l){
+void createGas(Container c, std::vector<Box> &boxes, std::vector<Particle> &particles){
+const int xstep = 32;
+const int ystep = 32;
+int  n = c.lenght/xstep;
+int  m = c.height/ystep;
+vec x(1,0);
+vec y(0,1);
+vec ipos(0,0);
 
+for (int  i = 0; i<n;i++){
+    for (int j = 0; j<m; j++){
+        ipos  = x*(-c.lenght/2.0+10)+y*(c.height/2.0-10) + x*xstep*i - y*ystep*j; 
+        Particle pt;
+        pt.pos = ipos;
+        int vx = rand()%100 - 50;
+        int vy = rand()%100 - 50;
+        pt.vel = vec(vx,vy);
+        pt.mass = 1;
+        pt.r = 3;
+        particles.push_back(pt);
+    }
 }
 
-void createGas(Container c){
-
+registerContainer(c,boxes);
 }
 
 void createFluid(double speed, double density){

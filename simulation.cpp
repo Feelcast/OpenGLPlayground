@@ -221,9 +221,11 @@ int main(int argc, char** argv){
     // File containing the data
     std::string filename = "particle_data.txt";
     particles = readParticlesFromFile(filename);
-    traceFlag = true;
+    //traceFlag = true;
     //box creation
-    boxes.push_back(Box(vec(0,0), vec(0,0),50,160,160,30,true));
+    Container m(vec(0,0),500,1000);
+    createGas(m,boxes, particles);
+    //boxes.push_back(Box(vec(0,0), vec(0,0),50,160,160,30,true));
     //forceSim = true;
     //equiSystem(10,10,10,40,1000);
 
