@@ -3,11 +3,17 @@
 // k= 500
 
 // global
+//Quadtree qt(-100,100,800,800,1000);
 std::vector<Particle> particles;
 std::vector<Box> boxes;
+std::vector<std::vector<vec>> partPositions;
+std::vector<std::vector<vec>> boxPositions;
 bool traceFlag = false;
 bool forceSim = false;
+bool rts = false;
 long unsigned int time_int = 0;
+int frame = 0;
+int frameLimit = 660;
 // button
 bool play = false;
 
@@ -36,9 +42,21 @@ particles.push_back({r3,v3,zero,m3});
 }
 
 void updateDynamics(){
-    particleDynamics(particles, forceSim);
+    double h = 0.001;
+    particleDynamics(particles, forceSim,h);
     particleBoxCols(particles, boxes);
-    boxDynamics(boxes);
+    boxDynamics(boxes,h);
+}
+
+void readPositions(int frameNumber){
+int ps = particles.size();
+int bs  = boxes.size();
+for (int i = 0; i<ps;i++){
+    particles[i].pos = partPositions[frameNumber][i];
+}
+for (int i = 0; i<bs;i++){
+    boxes[i].pos = boxPositions[frameNumber][i];
+}
 }
 
 void circle (vec pos, double cr){
@@ -192,10 +210,19 @@ void render(void)
 
 void time(int t){
     if (play){
-    updateDynamics();
+        if (rts){
+            updateDynamics();
+        }
     t++;
     time_int++;
     if(t%15 == 0){
+        if (!rts && frame < frameLimit){
+            readPositions(frame);
+            frame++;
+        }
+        if (frame>= frameLimit){
+            play = false;
+        }
         render();
         glutPostRedisplay();
     }
@@ -221,10 +248,14 @@ int main(int argc, char** argv){
     // File containing the data
     std::string filename = "particle_data.txt";
     particles = readParticlesFromFile(filename);
+    //preGenerativeMK1(0.001,frameLimit);
+    initObjects(particles, boxes);
+    loadSimData(partPositions, boxPositions);
+    readPositions(0);
     //traceFlag = true;
     //box creation
-    Container m(vec(0,0),500,1000);
-    createGas(m,boxes, particles);
+    //Container m(vec(0,0),500,1000);
+    //createGas(m,boxes, particles);
     //boxes.push_back(Box(vec(0,0), vec(0,0),50,160,160,30,true));
     //forceSim = true;
     //equiSystem(10,10,10,40,1000);

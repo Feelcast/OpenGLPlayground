@@ -152,13 +152,12 @@ class Container{
 
 };
 
-struct ParticlesList{
-    Particle particlesArr[2000];
+struct Cell {
+    double x, y; // Cell's top-left corner coordinates
+    double width, height; // Cell's dimensions
+    std::vector<Particle*> particles; // Particles in the cell
 };
 
-struct BoxesList{
-    Box boxesArr[100];
-};
 
 void registerContainer(Container c, std::vector<Box> &boxes){
     boxes.push_back(c.leftSide);
