@@ -50,11 +50,6 @@ void calculateCol(Particle &p1, Particle &p2){
     p2.vel = p2.vel + v2f;
 }
 
-void calculateColPtr(Particle* p1, Particle* p2, std::vector<Particle> &particles){
-
-
-}
-
 void calculateCol(Box &b, Particle &p, int numcase){
     vec normal(0,0);
     BoxVertex bVertex = b.getVertex();
@@ -87,7 +82,6 @@ void calculateCol(Box &b, Particle &p, int numcase){
     if (p.mechanic){
         p.vel = p.vel + v2f;
     }
-    
 }
 
 class Quadtree {
@@ -192,7 +186,7 @@ void Quadtree::checkCollisionsInCell(const Cell& cell, std::vector<Particle> &pa
             Particle* p1 = cell.particles[i];
             Particle* p2 = cell.particles[j];
             if(areColliding(p1,p2)){
-                calculateColPtr(p1,p2, particles);
+                //calculateColPtr(p1,p2, particles);
             }
             // Check for collision between p1 and p2
             // Implement your collision detection logic here
@@ -311,7 +305,7 @@ void RK4inter(std::vector<Particle> &particles, int n, double h, bool forceSim, 
 void constantVelSim(std::vector<Particle> &particles, int n, double h){
     Particle &p1 = particles[n];
     if(p1.vel[0]!=0 || p1.vel[1]!=0){
-    p1.pos = p1.pos + p1.vel*h;
+        p1.pos = p1.pos + p1.vel*h;
     }
 }
 
@@ -387,19 +381,19 @@ vec x(1,0);
 vec y(0,1);
 vec ipos(0,0);
 
-for (int  i = 0; i<n;i++){
-    for (int j = 0; j<m; j++){
-        ipos  = x*(-l/2.0+14)+y*(h/2.0-14) + x*xstep*i - y*ystep*j; 
-        Particle pt;
-        pt.pos = ipos;
-        int vx = rand()%40 - 20;
-        int vy = rand()%40 - 20;
-        pt.vel = vec(vx,vy);
-        pt.mass = 1;
-        pt.r = 3;
-        particles.push_back(pt);
+    for (int  i = 0; i<n;i++){
+        for (int j = 0; j<m; j++){
+            ipos  = x*(-l/2.0+14)+y*(h/2.0-14) + x*xstep*i - y*ystep*j; 
+            Particle pt;
+            pt.pos = ipos;
+            int vx = rand()%40 - 20;
+            int vy = rand()%40 - 20;
+            pt.vel = vec(vx,vy);
+            pt.mass = 1;
+            pt.r = 3;
+            particles.push_back(pt);
+        }
     }
-}
 }
 
 // Read data from a file and return a vector of Particle objects
@@ -541,7 +535,7 @@ void saveVectorsToFile(const std::vector<std::vector<vec>>& data, const std::str
         // Iterate over each array in the inner vector
         for (const auto& arrayElement : innerVector) {
             // Output array elements separated by a space
-                outFile << arrayElement[0] << " "<< arrayElement[1] << "|";;
+            outFile << arrayElement[0] << " "<< arrayElement[1] << "|";;
         }
 
         outFile << "\n"; // Start a new line after each inner vector

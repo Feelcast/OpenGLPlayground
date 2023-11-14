@@ -8,12 +8,18 @@ std::vector<Particle> particles;
 std::vector<Box> boxes;
 std::vector<std::vector<vec>> partPositions;
 std::vector<std::vector<vec>> boxPositions;
+long unsigned int time_int = 0;
+//config
 bool traceFlag = false;
 bool forceSim = false;
 bool rts = false;
-long unsigned int time_int = 0;
+//simulation constants
 int frame = 0;
 int frameLimit = 660;
+double h = 0.001;
+//window size
+const double xsc = 1280;
+const double ysc = 720;
 // button
 bool play = false;
 
@@ -42,7 +48,6 @@ particles.push_back({r3,v3,zero,m3});
 }
 
 void updateDynamics(){
-    double h = 0.001;
     particleDynamics(particles, forceSim,h);
     particleBoxCols(particles, boxes);
     boxDynamics(boxes,h);
@@ -67,7 +72,7 @@ void circle (vec pos, double cr){
 	glBegin(GL_TRIANGLE_FAN);
 	glVertex2f(px,py);
 	for ( int i=0;i<n+1;i++){
-	glVertex2f(px+cr*cosf(i*2*PI/n),py+cr*sinf(i*2*PI/n));
+	    glVertex2f(px+cr*cosf(i*2*PI/n),py+cr*sinf(i*2*PI/n));
 	}
 	glEnd();
 }
@@ -113,38 +118,35 @@ void renderTrace(std::vector<vec> points){
 
 void drawPartVec(Particle p){
     vec x1 = p.pos;
-    if(p.ac[0] != 0 && p.ac[1] != 0){
+    if(p.ac[0] != 0 || p.ac[1] != 0){
         vec xa = p.pos + normalized(p.ac)*5;
         colourLine(x1,xa);
     }
-    if(p.vel[0] != 0 && p.vel[1] != 0){
+    if(p.vel[0] != 0 || p.vel[1] != 0){
         vec xv = p.pos + normalized(p.vel)*20;
         colourLine(x1,xv);
     }
 }
 
 void grid (float l,int num){
-double xsc = 1280;
-double ysc = 720;
 	for(int i=0;i<num;i++)
-{
-vec vi1(i*l,ysc/2.0);
-vec vi1m(-i*l,ysc/2.0);
-vec vf1(i*l,- ysc/2.0);
-vec vf1m(-i*l,- ysc/2.0);
-line(vi1,vf1);
-line(vi1m,vf1m);
-}
+    {
+        vec vi1(i*l,ysc/2.0);
+        vec vi1m(-i*l,ysc/2.0);
+        vec vf1(i*l,- ysc/2.0);
+        vec vf1m(-i*l,- ysc/2.0);
+        line(vi1,vf1);
+        line(vi1m,vf1m);
+    }
 	for(int i=0;i<num;i++)
-{
-vec vi2(xsc/2.0,i*l);
-vec vf2(-xsc/2.0,i*l);
-vec vi2m(xsc/2.0,-i*l);
-vec vf2m(-xsc/2.0,-i*l);
-line(vi2,vf2);
-line(vi2m,vf2m);
-}
-
+    {
+        vec vi2(xsc/2.0,i*l);
+        vec vf2(-xsc/2.0,i*l);
+        vec vi2m(xsc/2.0,-i*l);
+        vec vf2m(-xsc/2.0,-i*l);
+        line(vi2,vf2);
+        line(vi2m,vf2m);
+    }
 }
 
 //TO DO
@@ -184,9 +186,9 @@ void render(void)
 	glLoadIdentity();
     glOrtho(-640, 640,-360, 360, 1, -1);
 	glTranslatef(0.0,0.0,0.0);
-
-    //object rendering
+    //grid
     grid(200,10);
+    //object rendering
     for (Particle p: particles){
         circle(p.pos, p.r);
         //drawPartVec(p);
@@ -253,16 +255,11 @@ int main(int argc, char** argv){
     loadSimData(partPositions, boxPositions);
     readPositions(0);
     //traceFlag = true;
-    //box creation
-    //Container m(vec(0,0),500,1000);
-    //createGas(m,boxes, particles);
-    //boxes.push_back(Box(vec(0,0), vec(0,0),50,160,160,30,true));
     //forceSim = true;
     //equiSystem(10,10,10,40,1000);
 
     //GL
     glutInit(&argc, argv);
-
     glutSetOption(GLUT_MULTISAMPLE, 8);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
     glEnable(GL_BLEND);
@@ -271,14 +268,13 @@ int main(int argc, char** argv){
     glHint(GL_LINE_SMOOTH, GL_NICEST);
     glEnable(GL_POINT_SMOOTH);
     glHint(GL_POINT_SMOOTH, GL_NICEST);
-
-    glutInitWindowSize(1280, 720);
+    //init
+    glutInitWindowSize(xsc, ysc);
     glutInitWindowPosition(100, 100);
     glutCreateWindow("Simulation");
     glutDisplayFunc(render);
     glutMouseFunc(onMouseClick);
     glutTimerFunc(1,time,0);
     glutMainLoop();
-    
     return 0;
 }
