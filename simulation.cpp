@@ -271,6 +271,7 @@ void time(int t){
         if (traceFlag){
             updateTraces(particles);
         }
+        clearPaths(rays);
         RaySimulation(rays, opticalObjects, xsc, ysc);
         t = 0;
     }
@@ -283,6 +284,12 @@ void onMouseClick(int button, int state, int x, int y) {
         // Check if the mouse click coordinates are within the button's area
         if (x >= 1140 && x <= 1160 && y >= 20 && y <= 40) {
             play = !play; // Toggle the boolean variable
+        }
+        for(OpticCircle &c: opticalObjects.circles){
+            vec cursorPos(x-xsc/2.0, ysc/2.0 - y);
+            if(c.contains(cursorPos)){
+                c.pos = cursorPos;
+            }
         }
     }
 }

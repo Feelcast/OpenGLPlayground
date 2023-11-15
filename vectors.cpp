@@ -283,9 +283,14 @@ double initialAngle;
 std::vector<MediumVertex> interfaces;
 
 LightRay(vec position, double ia, double w): pos(position), initialAngle(ia), wavelength(w) {
+    initialize();
+    constructColor();
+    initialPos = position;
+}
+void initialize(){
+    pos = initialPos;
     vel = fromPolar(v,initialAngle);
     interfaces.push_back({pos, initialAngle});
-    constructColor();
 }
 
 void checkMedium(MediumMatrix &m){
@@ -336,6 +341,7 @@ private:
     double currentN = 1.00;
     bool inMedium = false;
     rgbSet rayColor = {1.0, 1.0, 1.0};
+    vec initialPos;
 
     void constructColor(){
     double gamma = 0.8;

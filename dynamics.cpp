@@ -215,9 +215,16 @@ void Quadtree::remove(Particle* particle) {
 
 void RaySimulation(std::vector<LightRay> &rays, MediumMatrix &m, double xsc, double ysc){
     for (LightRay &l: rays){
+        l.initialize();
         while (l.pos[0]*l.pos[0]<xsc*xsc/4.0 && l.pos[1]*l.pos[1]<ysc*ysc/4.0){
             l.move(m, xsc ,ysc);
         }
+        
+    }
+}
+void clearPaths(std::vector<LightRay> &rays){
+    for (LightRay &l: rays){
+        l.interfaces.clear();
     }
 }
 
