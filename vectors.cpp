@@ -131,6 +131,11 @@ vec orthoNormal(vec v1, vec v2){
     return normalized(rotationAntiClockW(dif));
 }
 
+double angleVectors(vec v1, vec v2){
+    double sinAngle = cross(v1,v2)/(norm(v1)*norm(v2));
+    return asin(sinAngle);
+}
+
 struct BoxVertex{
     vec vertex[4];
 };
@@ -298,11 +303,11 @@ void checkMedium(MediumMatrix &m){
         if(c.contains(pos)){
             if (!inMedium && !c.rayInside){
                 vec normal = normalized(pos-c.pos);
-                vec veln = normalized(vel);
-                double angle1 = dot(normal, veln);
+                double angle1 = angleVectors(vel,normal*(-1));
                 double angle2 = asin((currentN/c.refractionIndex)*sin(angle1));
                 interfaces.push_back({pos, angle1-angle2});
-                vel = rotation(vel, angle1-angle2);
+                vel = normal*(-1);
+                vel = rotation(vel, -angle2);
                 currentN =  c.refractionIndex;
                 inMedium = true;
                 c.rayInside = true;
@@ -311,11 +316,11 @@ void checkMedium(MediumMatrix &m){
         else{
             if (inMedium && c.rayInside){
                 vec normal = normalized(pos-c.pos);
-                vec veln = normalized(vel);
-                double angle1 = dot(normal, veln);
+                double angle1 = angleVectors(vel,normal);
                 double angle2 = asin((currentN/1.0)*sin(angle1));
                 interfaces.push_back({pos, angle1-angle2});
-                vel = rotation(vel, angle1-angle2);
+                vel = normal;
+                vel = rotation(vel, -angle2);
                 currentN = 1.0;
                 inMedium = false;
                 c.rayInside = false;

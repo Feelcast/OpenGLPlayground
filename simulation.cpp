@@ -11,6 +11,9 @@ std::vector<std::vector<vec>> boxPositions;
 std::vector<LightRay> rays;
 MediumMatrix opticalObjects;
 long unsigned int time_int = 0;
+bool isDragging = false;
+vec dragStart;
+int draggedObject;
 //config
 bool traceFlag = false;
 bool forceSim = false;
@@ -248,6 +251,15 @@ void render(void)
     glutSwapBuffers();
 }
 
+void mouseMotion(int x, int y){
+    vec cursorPos(x-xsc/2.0, ysc/2.0 - y);
+    if(isDragging){
+        OpticCircle &c = opticalObjects.circles[draggedObject];
+        c.pos = c.pos + cursorPos - dragStart;
+        dragStart = cursorPos;
+    }
+}
+
 void time(int t){
     if (play){
         if (rts){
@@ -285,12 +297,20 @@ void onMouseClick(int button, int state, int x, int y) {
         if (x >= 1140 && x <= 1160 && y >= 20 && y <= 40) {
             play = !play; // Toggle the boolean variable
         }
+        int index = 0;
         for(OpticCircle &c: opticalObjects.circles){
             vec cursorPos(x-xsc/2.0, ysc/2.0 - y);
             if(c.contains(cursorPos)){
-                c.pos = cursorPos;
+                isDragging = true;
+                dragStart = cursorPos;
+                draggedObject = index;
+                continue;
             }
+            index++;
         }
+    }
+    else if (button == GLUT_LEFT_BUTTON && state == GLUT_UP){
+        isDragging = false;
     }
 }
 
@@ -300,11 +320,11 @@ int main(int argc, char** argv){
         std::string filename = "particle_data.txt";
         particles = readParticlesFromFile(filename);
         //optics
-        rays.push_back(LightRay(vec(-600,99),0, 390));
-        rays.push_back(LightRay(vec(-600,99.5),0, 430));
-        rays.push_back(LightRay(vec(-600,100),0, 565));  
-        rays.push_back(LightRay(vec(-600,100.5),0, 610));
-        rays.push_back(LightRay(vec(-600,101),0, 690));
+        rays.push_back(LightRay(vec(-635,99),0, 390));
+        rays.push_back(LightRay(vec(-635,99.5),0, 430));
+        rays.push_back(LightRay(vec(-635,100),0, 565));  
+        rays.push_back(LightRay(vec(-635,100.5),0, 610));
+        rays.push_back(LightRay(vec(-635,101),0, 690));
         opticalObjects.circles.push_back(OpticCircle(vec(0,0), 120,1.1));
         opticalObjects.circles.push_back(OpticCircle(vec(350,0), 100,1.1));
     }
@@ -334,6 +354,7 @@ int main(int argc, char** argv){
     glutCreateWindow("Simulation");
     glutDisplayFunc(render);
     glutMouseFunc(onMouseClick);
+    glutMotionFunc(mouseMotion);
     glutTimerFunc(1,time,0);
     glutMainLoop();
     return 0;
