@@ -213,6 +213,14 @@ void Quadtree::remove(Particle* particle) {
     }
 }
 
+void RaySimulation(std::vector<LightRay> &rays, MediumMatrix &m, double xsc, double ysc){
+    for (LightRay &l: rays){
+        while (l.pos[0]*l.pos[0]<xsc*xsc/4.0 && l.pos[1]*l.pos[1]<ysc*ysc/4.0){
+            l.move(m, xsc ,ysc);
+        }
+    }
+}
+
 void particleCols(std::vector<Particle> &particles){
     int s = particles.size();
     for (int i = 0; i<s; i++){
@@ -621,7 +629,7 @@ for (int i = 0; i < frames*15; i++){
     partPositions.push_back(tempPart);
     boxPositions.push_back(tempBox);
     }
-updateDynamics(particles,boxes,h, forceSim);
+    updateDynamics(particles,boxes,h, forceSim);
 }
 
 saveVectorsToFile(partPositions,"sim_particles.txt");
