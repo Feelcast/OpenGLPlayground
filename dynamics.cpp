@@ -262,24 +262,41 @@ double forceInvSq(double dsq, double m1, double m2, double k){
     if (dsq!=0){
         f = (k*m1*m2)/(dsq);
     }
-return f;
+    return f;
 }
+
+double forceGravPerturbative(double dsq, double m1, double m2, double k, double c){
+    double f = 0;
+    double d = sqrt(dsq);
+    if (dsq!=0){
+        f = (k*m1*m2)/(dsq) - c/(d*d*d);
+    }
+    return f;
+}
+
 
 vec forceApply(vec v1, vec v2, double m1, double m2, int fid){
     vec v = normalized((v2-v1));
     double dsq = sqNorm(v2-v1);
     double f = 0;
     double k = 4000;
+    double c = 10000000;
     switch(fid){
         case 1:
-        f = forceInvSq(dsq,m1,m2,k);
-        break;
+            f = forceInvSq(dsq,m1,m2,k);
+            break;
+        case 2: 
+            f = forceGravPerturbative(dsq,m1,m2,k,c);
+            break;
     }
     return v*f;
 }
 
 vec forceGrav(vec v1, vec v2, double m1, double m2){
     return forceApply(v1,v2,m1,m2,1);
+}
+vec forceGravPrec(vec v1, vec v2, double m1, double m2){
+    return forceApply(v1,v2,m1,m2,2);
 }
 
 vec acSum(std::vector<Particle> &particles, int n, vec posDelta, vec force(vec x1, vec x2, double m1, double m2)){
@@ -335,13 +352,14 @@ void particleDynamics(std::vector<Particle> &particles, bool forceSim, double h)
     int s = particles.size();
     for (int i=0; i<s; i++){
         if (forceSim){
-            RK4inter(particles, i, h, forceSim, forceGrav);    
+            RK4inter(particles, i, h, forceSim, forceGravPrec);    
         }
         else{
             constantVelSim(particles, i, h);
+            particleCols(particles);
         }
     }
-    particleCols(particles);
+
 }
 
 void boxDynamics(std::vector<Box> &boxes, double h){

@@ -18,6 +18,7 @@ int draggedObject;
 bool traceFlag = false;
 bool forceSim = false;
 bool rts = true;
+bool optics = false;
 //simulation constants
 int frame = 0;
 int frameLimit = 660;
@@ -70,16 +71,18 @@ void readPositions(int frameNumber){
     }
 }
 
-void circle (vec pos, double cr){
+void circle (vec pos, double cr, double r, double g, double b){
     const int n = 100;
     const double PI = 3.141592654;
     double px  = pos[0];
     double py = pos[1];
 	glBegin(GL_TRIANGLE_FAN);
+    glColor3f(r,g,b);
 	glVertex2f(px,py);
 	for ( int i=0;i<n+1;i++){
 	    glVertex2f(px+cr*cosf(i*2*PI/n),py+cr*sinf(i*2*PI/n));
 	}
+    glColor3f(1.0,1.0,1.0);
 	glEnd();
 }
 
@@ -119,8 +122,10 @@ void renderAllRays(){
 void line(vec v1,vec v2)
 {
 	glBegin(GL_LINES);
+    glColor3f(0.5,0.5,0.5);
 	glVertex2f(v1[0],v1[1]);
 	glVertex2f(v2[0],v2[1]);
+    glColor3f(1,1,1);
 	glEnd();
 }
 
@@ -147,11 +152,12 @@ void colourLine(vec v1,vec v2)
 }
 
 void renderTrace(std::vector<vec> points){
-    glBegin(GL_LINES);
-
+    glBegin(GL_LINE_STRIP);
+    glColor3f(0,0.6,0.7);
     for (vec v: points){
         glVertex2f(v[0],v[1]);
     }
+    glColor3f(1,1,1);
 	glEnd();
 }
 
@@ -226,10 +232,16 @@ void render(void)
     glOrtho(-640, 640,-360, 360, 1, -1);
 	glTranslatef(0.0,0.0,0.0);
     //grid
-    //grid(200,10);
+    grid(100,20);
     //object rendering
     for (Particle p: particles){
-        circle(p.pos, p.r);
+        if (p.mechanic){
+            circle(p.pos, p.r,1,1,1);
+        }
+        else{
+            circle(p.pos, p.r,0.75,0.75,0);
+        }
+        
         //drawPartVec(p);
         if(traceFlag){
         renderTrace(p.trace);
@@ -283,8 +295,10 @@ void time(int t){
         if (traceFlag){
             updateTraces(particles);
         }
+        if (optics){
         clearPaths(rays);
         RaySimulation(rays, opticalObjects, xsc, ysc);
+        }
         t = 0;
     }
     }
@@ -320,6 +334,7 @@ int main(int argc, char** argv){
         std::string filename = "particle_data.txt";
         particles = readParticlesFromFile(filename);
         //optics
+        /*
         rays.push_back(LightRay(vec(-635,99),0, 390));
         rays.push_back(LightRay(vec(-635,99.5),0, 430));
         rays.push_back(LightRay(vec(-635,100),0, 565));  
@@ -327,6 +342,7 @@ int main(int argc, char** argv){
         rays.push_back(LightRay(vec(-635,101),0, 690));
         opticalObjects.circles.push_back(OpticCircle(vec(0,0), 120,1.1));
         opticalObjects.circles.push_back(OpticCircle(vec(350,0), 100,1.1));
+        */
     }
     else{
         //preGenerativeMK1(0.001,frameLimit);
@@ -334,8 +350,8 @@ int main(int argc, char** argv){
         loadSimData(partPositions, boxPositions);
         readPositions(0);
     }
-    //traceFlag = true;
-    //forceSim = true;
+    traceFlag = true;
+    forceSim = true;
     //equiSystem(10,10,10,40,1000);
 
     //GL
