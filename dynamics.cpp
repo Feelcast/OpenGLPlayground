@@ -9,14 +9,6 @@ bool areColliding(Particle p1, Particle p2){
     return result;
 }
 
-bool areColliding(Particle* p1, Particle* p2){
-    vec dif = p2->pos - p1->pos;
-    double distsq = sqNorm(dif);
-    double colRad = (p1->r + p2->r)*(p1->r + p2->r);
-    bool result = distsq < 1.05*colRad;
-    return result;
-}
-
 bool areColliding(vec v1, vec v2, Particle p){
     vec on = orthoNormal(v1,v2);
     vec unitary = normalized(v2-v1);
@@ -29,13 +21,21 @@ bool areColliding(vec v1, vec v2, Particle p){
     return result;
 }
 
+bool areColliding(vec m, vec n, vec u, double lsq, Particle p){
+    vec dvec = p.pos-m;
+    double normalProy = dot(dvec, n);
+    double tProy = dot(dvec, u);
+    bool result = normalProy*normalProy < (p.r*1.01)*(p.r*1.01) && tProy*tProy < 1.01*lsq/4.0;
+    return result;
+}
+
 int areColliding(Box b, Particle p){
     //bVertex index from 0 to 3
-    BoxVertex bVertex = b.getVertex();
-    int result = 1*areColliding(bVertex.vertex[0],bVertex.vertex[1],p) +
-                    2*areColliding(bVertex.vertex[1],bVertex.vertex[2],p) +
-                    3*areColliding(bVertex.vertex[2],bVertex.vertex[3],p) +
-                    4*areColliding(bVertex.vertex[3],bVertex.vertex[0],p);
+    BoxMecLines bl = b.getLines();
+    int result = 1*areColliding(bl.middlePoint[0], bl.normal[0], bl.unit[0], bl.lsq[0],p) +
+                    2*areColliding(bl.middlePoint[1], bl.normal[1], bl.unit[1], bl.lsq[1],p) +
+                    3*areColliding(bl.middlePoint[2], bl.normal[2], bl.unit[2], bl.lsq[2],p) +
+                    4*areColliding(bl.middlePoint[3], bl.normal[3], bl.unit[3], bl.lsq[3],p);
     return result;
 }
 
@@ -52,23 +52,8 @@ void calculateCol(Particle &p1, Particle &p2){
 
 void calculateCol(Box &b, Particle &p, int numcase){
     vec normal(0,0);
-    BoxVertex bVertex = b.getVertex();
-    switch (numcase) {
-    case 1:
-        normal = orthoNormal(bVertex.vertex[0],bVertex.vertex[1]);
-        break;
-    case 2:
-        normal = orthoNormal(bVertex.vertex[1],bVertex.vertex[2]);
-        break;
-    case 3:
-        normal = orthoNormal(bVertex.vertex[2],bVertex.vertex[3]);
-        break;
-    case 4:
-        normal = orthoNormal(bVertex.vertex[3],bVertex.vertex[0]);
-        break;
-    default:
-        break;
-    }
+    BoxMecLines bl = b.getLines();
+    normal = bl.normal[numcase - 1];
 
     vec relv = b.vel - p.vel;
     double tMass = b.mass + p.mass;
@@ -81,135 +66,6 @@ void calculateCol(Box &b, Particle &p, int numcase){
     }
     if (p.mechanic){
         p.vel = p.vel + v2f;
-    }
-}
-
-class Quadtree {
-public:
-    Quadtree(double x, double y, double width, double height, int maxParticlesPerCell);
-    ~Quadtree();
-    void clear();
-    void insert(Particle* particle);
-    void remove(Particle* particle);
-    void checkCollisions(std::vector<Particle> &particles);
-
-private:
-    void split();
-    bool contains(const Cell& cell, const Particle* particle);
-    void checkCollisionsInCell(const Cell& cell, std::vector<Particle> &particles);
-
-    double x;
-    double y;
-    double width;
-    double height;
-    int maxParticlesPerCell;
-    std::vector<Particle*> particles;
-    Cell* cells[4];
-};
-
-Quadtree::Quadtree(double x, double y, double width, double height, int maxParticlesPerCell)
-    : x(x), y(y), width(width), height(height), maxParticlesPerCell(maxParticlesPerCell) {
-    for (int i = 0; i < 4; ++i) {
-        cells[i] = nullptr;
-    }
-}
-
-Quadtree::~Quadtree() {
-    clear();
-}
-
-void Quadtree::clear() {
-    particles.clear();
-    for (int i = 0; i < 4; ++i) {
-        if (cells[i] != nullptr) {
-            delete cells[i];
-            cells[i] = nullptr;
-        }
-    }
-}
-
-void Quadtree::insert(Particle* particle) {
-    if (particles.size() < maxParticlesPerCell) {
-        particles.push_back(particle);
-        return;
-    }
-
-    if (cells[0] == nullptr) {
-        split();
-    }
-
-    for (int i = 0; i < 4; ++i) {
-        if (contains(*cells[i], particle)) {
-            insert(particle);
-        }
-    }
-}
-
-void Quadtree::split() {
-    double subWidth = width / 2;
-    double subHeight = height / 2;
-    cells[0] = new Cell{ x, y, subWidth, subHeight };
-    cells[1] = new Cell{ x + subWidth, y, subWidth, subHeight };
-    cells[2] = new Cell{ x, y + subHeight, subWidth, subHeight };
-    cells[3] = new Cell{ x + subWidth, y + subHeight, subWidth, subHeight };
-
-    // Reinsert particles into sub-cells
-    for (auto& particle : particles) {
-        for (int i = 0; i < 4; ++i) {
-            if (contains(*cells[i], particle)) {
-                insert(particle);
-            }
-        }
-    }
-
-    particles.clear();
-}
-
-bool Quadtree::contains(const Cell& cell, const Particle* particle) {
-    return (particle->pos[0] >= cell.x && particle->pos[0] < cell.x + cell.width &&
-            particle->pos[1] >= cell.y && particle->pos[1] < cell.y + cell.height);
-}
-
-void Quadtree::checkCollisions(std::vector<Particle> &particles) {
-    for (auto& particle : particles) {
-        for (int i = 0; i < 4; ++i) {
-            if (cells[i] != nullptr) {
-                checkCollisionsInCell(*cells[i], particles);
-            }
-        }
-    }
-}
-
-void Quadtree::checkCollisionsInCell(const Cell& cell, std::vector<Particle> &particles) {
-    for (size_t i = 0; i < cell.particles.size(); ++i) {
-        for (size_t j = i + 1; j < cell.particles.size(); ++j) {
-            Particle* p1 = cell.particles[i];
-            Particle* p2 = cell.particles[j];
-            if(areColliding(p1,p2)){
-                //calculateColPtr(p1,p2, particles);
-            }
-            // Check for collision between p1 and p2
-            // Implement your collision detection logic here
-            // If a collision is detected, handle it as needed
-            // (e.g., call calculateCol(p1, p2))
-        }
-    }
-}
-
-void Quadtree::remove(Particle* particle) {
-    // Find the cell that contains the particle and remove it from that cell
-    for (size_t i = 0; i < particles.size(); ++i) {
-        if (particles[i] == particle) {
-            particles.erase(particles.begin() + i);
-            return;
-        }
-    }
-
-    // If the particle was not found in the current cell, check sub-cells
-    for (int i = 0; i < 4; ++i) {
-        if (cells[i] != nullptr && contains(*cells[i], particle)) {
-            remove(particle);
-        }
     }
 }
 
@@ -228,21 +84,7 @@ void clearPaths(std::vector<LightRay> &rays){
     }
 }
 
-void particleCols(std::vector<Particle> &particles){
-    int s = particles.size();
-    for (int i = 0; i<s; i++){
-        Particle &pi = particles[i];
-        for (int j = 0; j<i; j++){
-            Particle &pj = particles[j];
-            if(areColliding(pi,pj)){
-                calculateCol(pi,pj);
-            }
-        }
-    }
-}
-
 void particleBoxCols(std::vector<Particle> &particles, std::vector<Box> &boxes){
-    //implementar quadtrees
     int sp = particles.size();
     int sb = boxes.size();
     for (int i = 0; i<sp; i++){
@@ -343,8 +185,9 @@ void constantVelSim(std::vector<Particle> &particles, int n, double h){
 
 void boxRK4(std::vector<Box> &boxes, int n, double h){
     Box &b = boxes[n];
+    b.update();
     if(b.vel[0]!=0 || b.vel[1]!=0){
-        b.pos = b.pos + b.vel*h;
+        b.pos = b.pos + b.vel*h;  
     }
 }
 
@@ -356,10 +199,15 @@ void particleDynamics(std::vector<Particle> &particles, bool forceSim, double h)
         }
         else{
             constantVelSim(particles, i, h);
-            particleCols(particles);
+            Particle &pi = particles[i];
+            for (int j = 0; j<i; j++){
+                Particle &pj = particles[j];
+                if(areColliding(pi,pj)){
+                    calculateCol(pi,pj);
+                }
+            }
         }
     }
-
 }
 
 void boxDynamics(std::vector<Box> &boxes, double h){
@@ -382,38 +230,36 @@ void updateTraces(std::vector<Particle> &particles){
 }
 
 void createGas(Container c, std::vector<Box> &boxes, std::vector<Particle> &particles){
-const int xstep = 32;
-const int ystep = 32;
-int  n = c.lenght/xstep;
-int  m = c.height/ystep;
-vec x(1,0);
-vec y(0,1);
-vec ipos(0,0);
-
-for (int  i = 0; i<n;i++){
-    for (int j = 0; j<m; j++){
-        ipos  = x*(-c.lenght/2.0+10)+y*(c.height/2.0-10) + x*xstep*i - y*ystep*j; 
-        Particle pt;
-        pt.pos = ipos;
-        int vx = rand()%100 - 50;
-        int vy = rand()%100 - 50;
-        pt.vel = vec(vx,vy);
-        pt.mass = 1;
-        pt.r = 3;
-        particles.push_back(pt);
+    const int xstep = 32;
+    const int ystep = 32;
+    int  n = c.lenght/xstep;
+    int  m = c.height/ystep;
+    vec x(1,0);
+    vec y(0,1);
+    vec ipos(0,0);
+    for (int  i = 0; i<n;i++){
+        for (int j = 0; j<m; j++){
+            ipos  = x*(-c.lenght/2.0+10)+y*(c.height/2.0-10) + x*xstep*i - y*ystep*j; 
+            Particle pt;
+            pt.pos = ipos;
+            int vx = rand()%100 - 50;
+            int vy = rand()%100 - 50;
+            pt.vel = vec(vx,vy);
+            pt.mass = 1;
+            pt.r = 3;
+            particles.push_back(pt);
+        }
     }
-}
 }
 
 void createGas(double l, double h, std::vector<Particle> &particles){
-const int xstep = 28;
-const int ystep = 28;
-int  n = l/xstep;
-int  m = h/ystep;
-vec x(1,0);
-vec y(0,1);
-vec ipos(0,0);
-
+    const int xstep = 28;
+    const int ystep = 28;
+    int  n = l/xstep;
+    int  m = h/ystep;
+    vec x(1,0);
+    vec y(0,1);
+    vec ipos(0,0);
     for (int  i = 0; i<n;i++){
         for (int j = 0; j<m; j++){
             ipos  = x*(-l/2.0+14)+y*(h/2.0-14) + x*xstep*i - y*ystep*j; 
@@ -543,9 +389,9 @@ void loadBoxProperties(std::vector<Box>& boxes, const std::string& filename) {
     while (std::getline(inFile, line)) {
         std::istringstream iss(line);
         Box box;
-
         // Parse mass, height, and length from the line
         if (iss >> box.mass >> box.height >> box.lenght) {
+            box.update();
             boxes.push_back(box);
         } else {
             std::cerr << "Error parsing line: " << line << std::endl;
@@ -627,7 +473,6 @@ std::vector<std::vector<vec>> boxPositions;
 
 // here the setup
 bool forceSim = false;
-//Container m(vec(0,0),500,1000);
 createGas(1280,580, particles);
 Box upper(vec(0,290),vec(0,0),1000,4,1280,0,false);
 Box lower(vec(0,-290),vec(0,0),1000,4,1280,0,false);
@@ -635,7 +480,6 @@ Box mobile(vec(-790,0),vec(300,0),1000, 200, 200,0,true);
 boxes.push_back(upper);
 boxes.push_back(lower);
 boxes.push_back(mobile);
-
 saveParticleProperties(particles, "particle_properties.txt");
 saveBoxProperties(boxes,"box_properties.txt");
 
@@ -647,7 +491,6 @@ for (int i = 0; i < frames*15; i++){
     for (const Particle& particle : particles) {
         tempPart.push_back(particle.pos);
     }
-
     for (const Box& box : boxes) {
         tempBox.push_back(box.pos);
     }
@@ -656,7 +499,6 @@ for (int i = 0; i < frames*15; i++){
     }
     updateDynamics(particles,boxes,h, forceSim);
 }
-
 saveVectorsToFile(partPositions,"sim_particles.txt");
 saveVectorsToFile(boxPositions,"sim_boxes.txt");
 }

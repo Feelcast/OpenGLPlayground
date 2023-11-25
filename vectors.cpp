@@ -140,6 +140,13 @@ struct BoxVertex{
     vec vertex[4];
 };
 
+struct BoxMecLines{
+    vec middlePoint[4];
+    vec normal[4];
+    vec unit[4];
+    double lsq[4];
+};
+
 struct Particle {
     vec pos;  // Position vector
     vec vel;  // Velocity vector
@@ -162,6 +169,7 @@ class Box {
         lenght = l;
         rotation = rot*PI/180.0;
         mechanic = mec;
+        update();
     }
     vec pos;  // Position vector
     vec vel;  // Velocity vector
@@ -171,8 +179,9 @@ class Box {
     double lenght;
     double rotation;
     bool mechanic = true;
-
-    BoxVertex getVertex(){
+    BoxVertex getVertex() {return bv;} 
+    BoxMecLines getLines() {return bml;}
+    BoxVertex getVertexC(){
         vec xp(cos(rotation), sin(rotation));
         vec yp(-sin(rotation), cos(rotation));
         BoxVertex result;
@@ -181,9 +190,40 @@ class Box {
         result.vertex[2] = pos + xp*lenght/2.0 - yp*height/2.0;
         result.vertex[3] = pos - xp*lenght/2.0 - yp*height/2.0;
         return result;
-    } 
+    }
+    void update(){
+        calcVertex();
+        calcNormals();
+    }
     private:
-    
+    BoxVertex bv;
+    BoxMecLines bml;
+    void calcVertex(){
+        vec xp(cos(rotation), sin(rotation));
+        vec yp(-sin(rotation), cos(rotation));
+        bv.vertex[0] = pos - xp*lenght/2.0 + yp*height/2.0;
+        bml.unit[0] = xp;
+        bml.lsq[0] = lenght*lenght;
+        bv.vertex[1] = pos + xp*lenght/2.0 + yp*height/2.0;
+        bml.unit[1] = yp*(-1.0);
+        bml.lsq[1] = height*height;
+        bv.vertex[2] = pos + xp*lenght/2.0 - yp*height/2.0;
+        bml.unit[2] = xp*(-1.0);
+        bml.lsq[2] = lenght*lenght;
+        bv.vertex[3] = pos - xp*lenght/2.0 - yp*height/2.0;
+        bml.unit[3] = yp;
+        bml.lsq[3] = height*height;
+    }
+    void calcNormals(){
+        bml.normal[0] = rotationAntiClockW(bml.unit[0]);
+        bml.normal[1] = rotationAntiClockW(bml.unit[1]);
+        bml.normal[2] = rotationAntiClockW(bml.unit[2]);
+        bml.normal[3] = rotationAntiClockW(bml.unit[3]);
+        bml.middlePoint[0] = (bv.vertex[0] + bv.vertex[1])/2.0;
+        bml.middlePoint[1] = (bv.vertex[1] + bv.vertex[2])/2.0;
+        bml.middlePoint[2] = (bv.vertex[2] + bv.vertex[3])/2.0;
+        bml.middlePoint[3] = (bv.vertex[3] + bv.vertex[1])/2.0;
+    }
 };
 
 class OpticBox {
@@ -213,7 +253,6 @@ class OpticBox {
         return result;
     } 
     private:
-    
 };
 
 class OpticCircle{

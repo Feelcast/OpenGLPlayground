@@ -17,7 +17,7 @@ int draggedObject;
 //config
 bool traceFlag = false;
 bool forceSim = false;
-bool rts = true;
+bool rts = false;
 bool optics = false;
 //simulation constants
 int frame = 0;
@@ -130,7 +130,7 @@ void line(vec v1,vec v2)
 }
 
 void renderBox(Box b){
-    BoxVertex bVertex = b.getVertex();
+    BoxVertex bVertex = b.getVertexC();
     glBegin(GL_QUADS);
     glColor3f(0.75,0.75,0);
     glVertex2f(bVertex.vertex[0][0],bVertex.vertex[0][1]);
@@ -345,13 +345,13 @@ int main(int argc, char** argv){
         */
     }
     else{
-        //preGenerativeMK1(0.001,frameLimit);
+        preGenerativeMK1(0.001,frameLimit);
         initObjects(particles, boxes);
         loadSimData(partPositions, boxPositions);
         readPositions(0);
     }
-    traceFlag = true;
-    forceSim = true;
+    //traceFlag = true;
+    //forceSim = true;
     //equiSystem(10,10,10,40,1000);
 
     //GL
