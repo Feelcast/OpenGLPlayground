@@ -67,6 +67,7 @@ void calculateCol(Box &b, Particle &p, int numcase){
     if (p.mechanic){
         p.vel = p.vel + v2f;
     }
+        b.deltap = b.deltap + v1f*p.mass;
 }
 
 void RaySimulation(std::vector<LightRay> &rays, MediumMatrix &m, double xsc, double ysc){
@@ -188,6 +189,12 @@ void boxRK4(std::vector<Box> &boxes, int n, double h){
     b.update();
     if(b.vel[0]!=0 || b.vel[1]!=0){
         b.pos = b.pos + b.vel*h;  
+    }
+}
+
+void updateBoxForces(std::vector<Box> &boxes, double t){
+    for (Box &b : boxes){
+        b.calcForce(t);
     }
 }
 
@@ -470,7 +477,8 @@ std::vector<Particle> particles;
 std::vector<Box> boxes;
 std::vector<std::vector<vec>> partPositions;
 std::vector<std::vector<vec>> boxPositions;
-
+std::vector<std::vector<vec>> boxVels;
+std::vector<std::vector<vec>> boxForces;
 // here the setup
 bool forceSim = false;
 createGas(1280,580, particles);
@@ -488,19 +496,28 @@ for (int i = 0; i < frames*15; i++){
     std::cout<<"Generating frame: "<<i/15<<std::endl;
     std::vector<vec> tempPart;
     std::vector<vec> tempBox;
+    std::vector<vec> tempBoxVels;
+    std::vector<vec> tempBoxForce;
     for (const Particle& particle : particles) {
         tempPart.push_back(particle.pos);
     }
     for (const Box& box : boxes) {
         tempBox.push_back(box.pos);
+        tempBoxVels.push_back(box.vel);
+        tempBoxForce.push_back(box.force);
     }
     partPositions.push_back(tempPart);
     boxPositions.push_back(tempBox);
+    boxVels.push_back(tempBoxVels);
+    boxForces.push_back(tempBoxForce);
+    updateBoxForces(boxes, 0.015);
     }
     updateDynamics(particles,boxes,h, forceSim);
 }
 saveVectorsToFile(partPositions,"sim_particles.txt");
 saveVectorsToFile(boxPositions,"sim_boxes.txt");
+saveVectorsToFile(boxForces,"sim_boxes_forces.txt");
+saveVectorsToFile(boxVels,"sim_boxes_vel.txt");
 }
 
 void initObjects(std::vector<Particle>& particles, std::vector<Box>& boxes){
@@ -508,7 +525,9 @@ loadParticleProperties(particles,"particle_properties.txt");
 loadBoxProperties(boxes, "box_properties.txt");
 }
 
-void loadSimData(std::vector<std::vector<vec>>& partPos,std::vector<std::vector<vec>>& boxPos){
+void loadSimData(std::vector<std::vector<vec>>& partPos,std::vector<std::vector<vec>>& boxPos,std::vector<std::vector<vec>>& boxVels,std::vector<std::vector<vec>>& boxForces){
 loadFileToVectors(partPos,"sim_particles.txt");
 loadFileToVectors(boxPos,"sim_boxes.txt");
+loadFileToVectors(boxVels,"sim_boxes_vel.txt");
+loadFileToVectors(boxForces,"sim_boxes_forces.txt");
 }

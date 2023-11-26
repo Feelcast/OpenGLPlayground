@@ -173,7 +173,8 @@ class Box {
     }
     vec pos;  // Position vector
     vec vel;  // Velocity vector
-    vec ac;
+    vec force;
+    vec deltap;
     double mass;       // Mass of the particle
     double height;
     double lenght;
@@ -194,6 +195,10 @@ class Box {
     void update(){
         calcVertex();
         calcNormals();
+    }
+    void calcForce(double deltat){
+        force = deltap/deltat;
+        deltap = vec(0,0);
     }
     private:
     BoxVertex bv;

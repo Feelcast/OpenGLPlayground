@@ -1,13 +1,15 @@
 #include "dynamics.cpp"
 #include <GL/freeglut.h>
 // k= 500
-
+//cgs system
 // global
 //Quadtree qt(-100,100,800,800,1000);
 std::vector<Particle> particles;
 std::vector<Box> boxes;
 std::vector<std::vector<vec>> partPositions;
 std::vector<std::vector<vec>> boxPositions;
+std::vector<std::vector<vec>> boxVels;
+std::vector<std::vector<vec>> boxForces;
 std::vector<LightRay> rays;
 MediumMatrix opticalObjects;
 long unsigned int time_int = 0;
@@ -345,9 +347,9 @@ int main(int argc, char** argv){
         */
     }
     else{
-        preGenerativeMK1(0.001,frameLimit);
+        //preGenerativeMK1(0.001,frameLimit);
         initObjects(particles, boxes);
-        loadSimData(partPositions, boxPositions);
+        loadSimData(partPositions, boxPositions, boxVels, boxForces);
         readPositions(0);
     }
     //traceFlag = true;
