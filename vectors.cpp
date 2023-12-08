@@ -136,6 +136,11 @@ double angleVectors(vec v1, vec v2){
     return asin(sinAngle);
 }
 
+struct SquaredSpeedHistogram{
+    std::vector<double> bins;
+    std::vector<int> speedDistribution;
+};
+
 struct BoxVertex{
     vec vertex[4];
 };

@@ -1,6 +1,27 @@
 
 #include "vectors.cpp"
 
+SquaredSpeedHistogram particleSpeedStatistics(std::vector<Particle> particles, double maxVelSquared, double binsNumber){
+    std::vector<double> bins;
+    std::vector<int> speedDistribution;
+    for (int i = 1; i<=binsNumber;i++){
+        bins.push_back(i*i*(maxVelSquared)/(binsNumber*binsNumber));
+        speedDistribution.push_back(0);
+    }
+    for(Particle p: particles){
+        double speedSquared = dot(p.vel,p.vel);
+        double lastBinUpperLimit = 0;
+        for(int j = 0; j<binsNumber;j++){
+            if(speedSquared > lastBinUpperLimit && speedSquared <= bins[j]){
+                speedDistribution[j]++;
+            }
+            lastBinUpperLimit = bins[j];
+        }
+    }
+    SquaredSpeedHistogram result = {bins, speedDistribution};
+    return result;
+}
+
 bool areColliding(Particle p1, Particle p2){
     vec dif = p2.pos - p1.pos;
     double distsq = sqNorm(dif);
@@ -259,7 +280,16 @@ void createGas(Container c, std::vector<Box> &boxes, std::vector<Particle> &part
     }
 }
 
-void createGas(double l, double h, std::vector<Particle> &particles){
+double uniformDistributionSpeed(int meanSpeed){
+    double randomUnit = (double) rand()/RAND_MAX;
+    return randomUnit*meanSpeed*2;
+}
+double uniformDistributionAngle(){
+    double PI = 3.141592654;
+    return (rand()%100)*2*PI/100.0;
+}
+
+void createGas(double l, double h, std::vector<Particle> &particles, int meanSpeed){
     const int xstep = 28;
     const int ystep = 28;
     int  n = l/xstep;
@@ -269,11 +299,12 @@ void createGas(double l, double h, std::vector<Particle> &particles){
     vec ipos(0,0);
     for (int  i = 0; i<n;i++){
         for (int j = 0; j<m; j++){
-            ipos  = x*(-l/2.0+14)+y*(h/2.0-14) + x*xstep*i - y*ystep*j; 
+            ipos  = x*(-l/2.0+10)+y*(h/2.0-10) + x*xstep*i - y*ystep*j; 
             Particle pt;
             pt.pos = ipos;
-            int vx = rand()%40 - 20;
-            int vy = rand()%40 - 20;
+            double angle = uniformDistributionAngle();
+            int vx = uniformDistributionSpeed(meanSpeed)*cos(angle);
+            int vy = uniformDistributionSpeed(meanSpeed)*sin(angle);
             pt.vel = vec(vx,vy);
             pt.mass = 1;
             pt.r = 3;
@@ -464,6 +495,34 @@ void loadFileToVectors(std::vector<std::vector<vec>>& data, const std::string& f
     inFile.close();
 }
 
+void saveHistograms(std::vector<SquaredSpeedHistogram>& data, const std::string& countFilename, const std::string& binsFilename){
+    std::ofstream countOutFile(countFilename);
+    if (!countOutFile.is_open()) {
+        std::cerr << "Error opening file: " << countFilename << std::endl;
+        return;
+    }
+    for (const SquaredSpeedHistogram& h : data) {
+        for (int count : h.speedDistribution){
+            countOutFile << count <<  ",";
+        }
+        countOutFile << std::endl;
+    }
+    countOutFile.close();
+
+    std::ofstream binsOutFile(binsFilename);
+    if (!binsOutFile.is_open()) {
+        std::cerr << "Error opening file: " << binsFilename << std::endl;
+        return;
+    }
+    for (const SquaredSpeedHistogram& h : data) {
+        for (double binLimit : h.bins){
+            binsOutFile << binLimit <<  ",";
+        }
+        binsOutFile << std::endl;
+    }
+    binsOutFile.close();
+}
+
 void updateDynamics(std::vector<Particle>& particles, std::vector<Box>& boxes, double h, bool forceSim){
     particleDynamics(particles, forceSim, h);
     particleBoxCols(particles, boxes);
@@ -472,7 +531,7 @@ void updateDynamics(std::vector<Particle>& particles, std::vector<Box>& boxes, d
 
 
 void preGenerativeMK1(double h, int frames){
-
+std::vector<SquaredSpeedHistogram> speedHistograms;
 std::vector<Particle> particles;
 std::vector<Box> boxes;
 std::vector<std::vector<vec>> partPositions;
@@ -481,13 +540,17 @@ std::vector<std::vector<vec>> boxVels;
 std::vector<std::vector<vec>> boxForces;
 // here the setup
 bool forceSim = false;
-createGas(1280,580, particles);
-Box upper(vec(0,290),vec(0,0),1000,4,1280,0,false);
-Box lower(vec(0,-290),vec(0,0),1000,4,1280,0,false);
-Box mobile(vec(-790,0),vec(300,0),1000, 200, 200,0,true);
+createGas(1200,580, particles, 100);
+Box upper(vec(0,290),vec(0,0),1000,4,1204,0,false);
+Box lower(vec(0,-290),vec(0,0),1000,4,1204,0,false);
+Box right_wall(vec(600,0),vec(0,0),1000,576,4,0,false);
+Box left_wall(vec(-600,0),vec(0,0),1000,576,4,0,false);
+//Box mobile(vec(-790,0),vec(300,0),1000, 200, 200,0,true);
 boxes.push_back(upper);
 boxes.push_back(lower);
-boxes.push_back(mobile);
+boxes.push_back(right_wall);
+boxes.push_back(left_wall);
+//boxes.push_back(mobile);
 saveParticleProperties(particles, "particle_properties.txt");
 saveBoxProperties(boxes,"box_properties.txt");
 
@@ -509,8 +572,11 @@ for (int i = 0; i < frames*15; i++){
     partPositions.push_back(tempPart);
     boxPositions.push_back(tempBox);
     boxVels.push_back(tempBoxVels);
-    boxForces.push_back(tempBoxForce);
-    updateBoxForces(boxes, 0.015);
+    boxForces.push_back(tempBoxForce);  
+    }
+    if(i%150==0){
+        updateBoxForces(boxes, 0.015);
+        speedHistograms.push_back(particleSpeedStatistics(particles, 100000,40));
     }
     updateDynamics(particles,boxes,h, forceSim);
 }
@@ -518,6 +584,7 @@ saveVectorsToFile(partPositions,"sim_particles.txt");
 saveVectorsToFile(boxPositions,"sim_boxes.txt");
 saveVectorsToFile(boxForces,"sim_boxes_forces.txt");
 saveVectorsToFile(boxVels,"sim_boxes_vel.txt");
+saveHistograms(speedHistograms,"speed_distributions.txt", "distribution_bins.txt");
 }
 
 void initObjects(std::vector<Particle>& particles, std::vector<Box>& boxes){
@@ -528,6 +595,6 @@ loadBoxProperties(boxes, "box_properties.txt");
 void loadSimData(std::vector<std::vector<vec>>& partPos,std::vector<std::vector<vec>>& boxPos,std::vector<std::vector<vec>>& boxVels,std::vector<std::vector<vec>>& boxForces){
 loadFileToVectors(partPos,"sim_particles.txt");
 loadFileToVectors(boxPos,"sim_boxes.txt");
-loadFileToVectors(boxVels,"sim_boxes_vel.txt");
-loadFileToVectors(boxForces,"sim_boxes_forces.txt");
+//loadFileToVectors(boxVels,"sim_boxes_vel.txt");
+//loadFileToVectors(boxForces,"sim_boxes_forces.txt");
 }

@@ -23,7 +23,7 @@ bool rts = false;
 bool optics = false;
 //simulation constants
 int frame = 0;
-int frameLimit = 660;
+int frameLimit = 600;
 double h = 0.001;
 //window size
 const double xsc = 1280;
@@ -229,7 +229,7 @@ void drawButton(){
 void render(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glMatrixMode(GL_MODELVIEW);
+    glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
     glOrtho(-640, 640,-360, 360, 1, -1);
 	glTranslatef(0.0,0.0,0.0);
@@ -252,12 +252,14 @@ void render(void)
     for (Box b: boxes){
         renderBox(b);
     }
-    renderAllRays();
-    renderOpticalObjects();
+    if (optics){
+        renderAllRays();
+        renderOpticalObjects();
+    }
     //time text
     double time_seg = time_int/1000.0;
     char* char_time = new char[10];
-    std::sprintf(char_time,"%04.3f",time_seg);
+    std::sprintf(char_time,"%2.3f",time_seg);
     displayText(vec(500,-320),char_time);
     //time button
     drawButton();
@@ -276,12 +278,10 @@ void mouseMotion(int x, int y){
 
 void time(int t){
     if (play){
+        time_int+=16;
         if (rts){
             updateDynamics();
         }
-    t++;
-    time_int++;
-    if(t%15 == 0){
         if (!rts && frame < frameLimit){
             readPositions(frame);
             frame++;
@@ -289,22 +289,52 @@ void time(int t){
         if (frame>= frameLimit){
             play = false;
         }
-        render();
-        glutPostRedisplay();
-    }
+        /*
+        if(time_int%96 == 0){
+            if (traceFlag){
+                updateTraces(particles);
+            }
+            if (optics){
+                clearPaths(rays);
+                RaySimulation(rays, opticalObjects, xsc, ysc);
+            }
+        }
+        */
+    }   
+    render();
+    //redisplay
+    glutPostRedisplay();
+    glutTimerFunc(16,time,0);
+}
 
-    if(t%90 == 0){
-        if (traceFlag){
-            updateTraces(particles);
+void idleFunction(){
+    if (play){
+        time_int+=16;
+        if (rts){
+            updateDynamics();
         }
-        if (optics){
-        clearPaths(rays);
-        RaySimulation(rays, opticalObjects, xsc, ysc);
+        if (!rts && frame < frameLimit){
+            readPositions(frame);
+            frame++;
         }
-        t = 0;
-    }
-    }
-    glutTimerFunc(1,time,t);
+        if (frame>= frameLimit){
+            play = false;
+        }
+        /*
+        if(time_int%96 == 0){
+            if (traceFlag){
+                updateTraces(particles);
+            }
+            if (optics){
+                clearPaths(rays);
+                RaySimulation(rays, opticalObjects, xsc, ysc);
+            }
+        }
+        */
+    }   
+    render();
+    //redisplay
+    glutPostRedisplay();
 }
 
 void onMouseClick(int button, int state, int x, int y) {
@@ -314,15 +344,17 @@ void onMouseClick(int button, int state, int x, int y) {
             play = !play; // Toggle the boolean variable
         }
         int index = 0;
-        for(OpticCircle &c: opticalObjects.circles){
-            vec cursorPos(x-xsc/2.0, ysc/2.0 - y);
-            if(c.contains(cursorPos)){
-                isDragging = true;
-                dragStart = cursorPos;
-                draggedObject = index;
-                continue;
+        if(optics){
+            for(OpticCircle &c: opticalObjects.circles){
+                vec cursorPos(x-xsc/2.0, ysc/2.0 - y);
+                if(c.contains(cursorPos)){
+                    isDragging = true;
+                    dragStart = cursorPos;
+                    draggedObject = index;
+                    continue;
+                }
+                index++;
             }
-            index++;
         }
     }
     else if (button == GLUT_LEFT_BUTTON && state == GLUT_UP){
@@ -373,7 +405,8 @@ int main(int argc, char** argv){
     glutDisplayFunc(render);
     glutMouseFunc(onMouseClick);
     glutMotionFunc(mouseMotion);
-    glutTimerFunc(1,time,0);
+    glutIdleFunc(idleFunction);
+    //glutTimerFunc(16,time,0);
     glutMainLoop();
     return 0;
 }
