@@ -1,5 +1,6 @@
 
 #include "vectors.cpp"
+#include <random>
 
 SquaredSpeedHistogram particleSpeedStatistics(std::vector<Particle> particles, double maxVelSquared, double binsNumber){
     std::vector<double> bins;
@@ -257,29 +258,6 @@ void updateTraces(std::vector<Particle> &particles){
     }
 }
 
-void createGas(Container c, std::vector<Box> &boxes, std::vector<Particle> &particles){
-    const int xstep = 32;
-    const int ystep = 32;
-    int  n = c.lenght/xstep;
-    int  m = c.height/ystep;
-    vec x(1,0);
-    vec y(0,1);
-    vec ipos(0,0);
-    for (int  i = 0; i<n;i++){
-        for (int j = 0; j<m; j++){
-            ipos  = x*(-c.lenght/2.0+10)+y*(c.height/2.0-10) + x*xstep*i - y*ystep*j; 
-            Particle pt;
-            pt.pos = ipos;
-            int vx = rand()%100 - 50;
-            int vy = rand()%100 - 50;
-            pt.vel = vec(vx,vy);
-            pt.mass = 1;
-            pt.r = 3;
-            particles.push_back(pt);
-        }
-    }
-}
-
 double uniformDistributionSpeed(int meanSpeed){
     double randomUnit = (double) rand()/RAND_MAX;
     return randomUnit*meanSpeed*2;
@@ -289,7 +267,29 @@ double uniformDistributionAngle(){
     return (rand()%100)*2*PI/100.0;
 }
 
-void createGas(double l, double h, std::vector<Particle> &particles, int meanSpeed){
+double maxwellBoltzmannSpeed(double meanSpeed, double mass){
+     // Constants
+    double energy = 0.5*mass*meanSpeed*meanSpeed;
+    const double sqrt2Pi = std::sqrt(2.0 * M_PI);
+
+    // Calculate the standard deviation
+    double sigma = std::sqrt(energy / mass);
+
+    // Create a random number generator
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::normal_distribution<double> distribution(0.0, sigma);
+
+    // Generate a random speed following Maxwell-Boltzmann distribution
+    double speed;
+    do {
+        speed = std::abs(distribution(gen));
+    } while (distribution(gen) < std::exp(-mass * speed * speed / (2.0 * energy)));
+
+    return speed;
+}
+
+void createGas(double l, double h, std::vector<Particle> &particles, double meanSpeed){
     const int xstep = 28;
     const int ystep = 28;
     int  n = l/xstep;
@@ -303,8 +303,8 @@ void createGas(double l, double h, std::vector<Particle> &particles, int meanSpe
             Particle pt;
             pt.pos = ipos;
             double angle = uniformDistributionAngle();
-            int vx = uniformDistributionSpeed(meanSpeed)*cos(angle);
-            int vy = uniformDistributionSpeed(meanSpeed)*sin(angle);
+            int vx = maxwellBoltzmannSpeed(meanSpeed,1.0)*cos(angle);
+            int vy = maxwellBoltzmannSpeed(meanSpeed,1.0)*sin(angle);
             pt.vel = vec(vx,vy);
             pt.mass = 1;
             pt.r = 3;
@@ -540,23 +540,23 @@ std::vector<std::vector<vec>> boxVels;
 std::vector<std::vector<vec>> boxForces;
 // here the setup
 bool forceSim = false;
-createGas(1200,580, particles, 100);
-Box upper(vec(0,290),vec(0,0),1000,4,1204,0,false);
-Box lower(vec(0,-290),vec(0,0),1000,4,1204,0,false);
-Box right_wall(vec(600,0),vec(0,0),1000,576,4,0,false);
-Box left_wall(vec(-600,0),vec(0,0),1000,576,4,0,false);
-//Box mobile(vec(-790,0),vec(300,0),1000, 200, 200,0,true);
+createGas(1280,580, particles, 50);
+Box upper(vec(0,290),vec(0,0),1000,4,1280,0,false);
+Box lower(vec(0,-290),vec(0,0),1000,4,1280,0,false);
+//Box right_wall(vec(600,0),vec(0,0),1000,576,4,0,false);
+//Box left_wall(vec(-600,0),vec(0,0),1000,576,4,0,false);
+Box mobile(vec(-790,0),vec(200,0),1000, 200, 200,0,true);
 boxes.push_back(upper);
 boxes.push_back(lower);
-boxes.push_back(right_wall);
-boxes.push_back(left_wall);
-//boxes.push_back(mobile);
+//boxes.push_back(right_wall);
+//boxes.push_back(left_wall);
+boxes.push_back(mobile);
 saveParticleProperties(particles, "particle_properties.txt");
 saveBoxProperties(boxes,"box_properties.txt");
 
-for (int i = 0; i < frames*15; i++){
-    if(i%15 == 0){
-    std::cout<<"Generating frame: "<<i/15<<std::endl;
+for (int i = 0; i < frames*16; i++){
+    if(i%16 == 0){
+    std::cout<<"Generating frame: "<<i/16<<std::endl;
     std::vector<vec> tempPart;
     std::vector<vec> tempBox;
     std::vector<vec> tempBoxVels;
@@ -574,9 +574,9 @@ for (int i = 0; i < frames*15; i++){
     boxVels.push_back(tempBoxVels);
     boxForces.push_back(tempBoxForce);  
     }
-    if(i%150==0){
-        updateBoxForces(boxes, 0.015);
-        speedHistograms.push_back(particleSpeedStatistics(particles, 100000,40));
+    if(i%160==0){
+        updateBoxForces(boxes, 0.016);
+        speedHistograms.push_back(particleSpeedStatistics(particles, 20000,40));
     }
     updateDynamics(particles,boxes,h, forceSim);
 }

@@ -23,7 +23,7 @@ bool rts = false;
 bool optics = false;
 //simulation constants
 int frame = 0;
-int frameLimit = 600;
+int frameLimit = 610;
 double h = 0.001;
 //window size
 const double xsc = 1280;
@@ -332,6 +332,7 @@ void idleFunction(){
         }
         */
     }   
+    //se llama en vsync
     render();
     //redisplay
     glutPostRedisplay();
