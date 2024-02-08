@@ -269,8 +269,9 @@ double uniformDistributionAngle(){
 
 double maxwellBoltzmannSpeed(double meanSpeed, double mass){
      // Constants
+    double PI = 3.141592654;
     double energy = 0.5*mass*meanSpeed*meanSpeed;
-    const double sqrt2Pi = std::sqrt(2.0 * M_PI);
+    const double sqrt2Pi = std::sqrt(2.0 * PI);
 
     // Calculate the standard deviation
     double sigma = std::sqrt(energy / mass);
