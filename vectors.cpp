@@ -160,6 +160,7 @@ struct Particle {
     double r;
     bool mechanic = true;
     std::vector<vec> trace;
+    int rgb[3];
 };
 
 class Box {

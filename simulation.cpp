@@ -17,13 +17,13 @@ bool isDragging = false;
 vec dragStart;
 int draggedObject;
 //config
-bool traceFlag = false;
+bool traceFlag = true;
 bool forceSim = false;
 bool rts = false;
 bool optics = false;
 //simulation constants
 int frame = 0;
-int frameLimit = 610;
+int frameLimit = 6100;
 double h = 0.001;
 //window size
 const double xsc = 1280;
@@ -68,9 +68,11 @@ void readPositions(int frameNumber){
     for (int i = 0; i<ps;i++){
         particles[i].pos = partPositions[frameNumber][i];
     }
+    /*
     for (int i = 0; i<bs;i++){
         boxes[i].pos = boxPositions[frameNumber][i];
     }
+    */
 }
 
 void circle (vec pos, double cr, double r, double g, double b){
@@ -238,10 +240,10 @@ void render(void)
     //object rendering
     for (Particle p: particles){
         if (p.mechanic){
-            circle(p.pos, p.r,1,1,1);
+            circle(p.pos, p.r,0.7,0.1,0);
         }
         else{
-            circle(p.pos, p.r,0.75,0.75,0);
+            circle(p.pos, p.r,0.9,0.9,0);
         }
         
         //drawPartVec(p);
@@ -278,9 +280,11 @@ void mouseMotion(int x, int y){
 
 void time(int t){
     if (play){
-        time_int+=16;
+        
         if (rts){
-            updateDynamics();
+            //for (int i = 0; i<16;i++){
+                updateDynamics();
+            //}  
         }
         if (!rts && frame < frameLimit){
             readPositions(frame);
@@ -289,17 +293,18 @@ void time(int t){
         if (frame>= frameLimit){
             play = false;
         }
-        /*
         if(time_int%96 == 0){
             if (traceFlag){
                 updateTraces(particles);
             }
+            /*
             if (optics){
                 clearPaths(rays);
                 RaySimulation(rays, opticalObjects, xsc, ysc);
             }
+            */
         }
-        */
+        time_int+=16;
     }   
     render();
     //redisplay
@@ -308,8 +313,7 @@ void time(int t){
 }
 
 void idleFunction(){
-    if (play){
-        time_int+=16;
+    if (play){   
         if (rts){
             updateDynamics();
         }
@@ -320,7 +324,6 @@ void idleFunction(){
         if (frame>= frameLimit){
             play = false;
         }
-        /*
         if(time_int%96 == 0){
             if (traceFlag){
                 updateTraces(particles);
@@ -330,12 +333,14 @@ void idleFunction(){
                 RaySimulation(rays, opticalObjects, xsc, ysc);
             }
         }
-        */
+        time_int+=16;
     }   
+    if(time_int%16 == 0){
     //se llama en vsync
     render();
     //redisplay
     glutPostRedisplay();
+    }
 }
 
 void onMouseClick(int button, int state, int x, int y) {
@@ -406,8 +411,8 @@ int main(int argc, char** argv){
     glutDisplayFunc(render);
     glutMouseFunc(onMouseClick);
     glutMotionFunc(mouseMotion);
-    glutIdleFunc(idleFunction);
-    //glutTimerFunc(16,time,0);
+    //glutIdleFunc(idleFunction);
+    glutTimerFunc(16,time,0);
     glutMainLoop();
     return 0;
 }

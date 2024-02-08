@@ -144,7 +144,7 @@ vec forceApply(vec v1, vec v2, double m1, double m2, int fid){
     vec v = normalized((v2-v1));
     double dsq = sqNorm(v2-v1);
     double f = 0;
-    double k = 4000;
+    double k = 8000;
     double c = 10000000;
     switch(fid){
         case 1:
@@ -365,7 +365,7 @@ void saveParticleProperties(const std::vector<Particle>& particles, const std::s
 
     // Write particle properties to the file, one particle per line
     for (const Particle& particle : particles) {
-        outFile << particle.mass << " " << particle.r << std::endl;
+        outFile << particle.mass << " " << particle.r << " " << particle.mechanic*1 <<std::endl;
     }
 
     outFile.close();
@@ -387,7 +387,7 @@ void loadParticleProperties(std::vector<Particle>& particles, const std::string&
         Particle particle;
 
         // Parse mass and radius from the line
-        if (iss >> particle.mass >> particle.r) {
+        if (iss >> particle.mass >> particle.r >> particle.mechanic) {
             particles.push_back(particle);
         } else {
             std::cerr << "Error parsing line: " << line << std::endl;
@@ -539,20 +539,22 @@ std::vector<std::vector<vec>> boxPositions;
 std::vector<std::vector<vec>> boxVels;
 std::vector<std::vector<vec>> boxForces;
 // here the setup
-bool forceSim = false;
-createGas(1280,580, particles, 50);
-Box upper(vec(0,290),vec(0,0),1000,4,1280,0,false);
-Box lower(vec(0,-290),vec(0,0),1000,4,1280,0,false);
+bool forceSim = true;
+//createGas(1280,580, particles, 50);
+//Box upper(vec(0,290),vec(0,0),1000,4,1280,0,false);
+//Box lower(vec(0,-290),vec(0,0),1000,4,1280,0,false);
 //Box right_wall(vec(600,0),vec(0,0),1000,576,4,0,false);
 //Box left_wall(vec(-600,0),vec(0,0),1000,576,4,0,false);
-Box mobile(vec(-790,0),vec(200,0),1000, 200, 200,0,true);
-boxes.push_back(upper);
-boxes.push_back(lower);
+//Box mobile(vec(-790,0),vec(200,0),1000, 200, 200,0,true);
+//boxes.push_back(upper);
+//boxes.push_back(lower);
 //boxes.push_back(right_wall);
 //boxes.push_back(left_wall);
-boxes.push_back(mobile);
+//boxes.push_back(mobile);
+std::string filename = "particle_data.txt";
+particles = readParticlesFromFile(filename);
 saveParticleProperties(particles, "particle_properties.txt");
-saveBoxProperties(boxes,"box_properties.txt");
+//saveBoxProperties(boxes,"box_properties.txt");
 
 for (int i = 0; i < frames*16; i++){
     if(i%16 == 0){
